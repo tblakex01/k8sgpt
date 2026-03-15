@@ -68,6 +68,14 @@ func (analyzer CronJobAnalyzer) Analyze(a common.Analyzer) ([]common.Result, err
 						Masked:   util.MaskString(cronJob.Name),
 					},
 				},
+				Severity: common.SeverityLow,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeCommand,
+					Command:     fmt.Sprintf("kubectl patch cronjob %s -n %s -p '{\"spec\":{\"suspend\":false}}'", cronJob.Name, cronJob.Namespace),
+					CommandArgs: []string{"kubectl", "patch", "cronjob", cronJob.Name, "-n", cronJob.Namespace, "-p", `{"spec":{"suspend":false}}`},
+					Description: "Unsuspend the cronjob to allow it to run on schedule.",
+					Risk:        "CronJob will resume running on its schedule",
+				},
 			})
 		} else {
 			// check the schedule format
@@ -86,6 +94,16 @@ func (analyzer CronJobAnalyzer) Analyze(a common.Analyzer) ([]common.Result, err
 							Unmasked: cronJob.Name,
 							Masked:   util.MaskString(cronJob.Name),
 						},
+					},
+					Severity: common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "CronJob has an invalid cron schedule expression. Fix the cron expression.",
+						Steps: []string{
+							fmt.Sprintf("kubectl get cronjob %s -n %s -o jsonpath='{.spec.schedule}'", cronJob.Name, cronJob.Namespace),
+							fmt.Sprintf("kubectl edit cronjob %s -n %s", cronJob.Name, cronJob.Namespace),
+						},
+						Risk: "No changes made; investigation only",
 					},
 				})
 			}
@@ -108,6 +126,16 @@ func (analyzer CronJobAnalyzer) Analyze(a common.Analyzer) ([]common.Result, err
 								Unmasked: cronJob.Name,
 								Masked:   util.MaskString(cronJob.Name),
 							},
+						},
+						Severity: common.SeverityMedium,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeInvestigation,
+							Description: "CronJob has a negative starting deadline. Review and correct the deadline configuration.",
+							Steps: []string{
+								fmt.Sprintf("kubectl get cronjob %s -n %s -o jsonpath='{.spec.startingDeadlineSeconds}'", cronJob.Name, cronJob.Namespace),
+								fmt.Sprintf("kubectl edit cronjob %s -n %s", cronJob.Name, cronJob.Namespace),
+							},
+							Risk: "No changes made; investigation only",
 						},
 					})
 
