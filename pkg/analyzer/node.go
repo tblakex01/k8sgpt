@@ -47,7 +47,7 @@ func (NodeAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 			switch nodeCondition.Type {
 			case v1.NodeReady:
 				if nodeCondition.Status != v1.ConditionTrue {
-					failures = addNodeConditionFailure(failures, node.Name, nodeCondition)
+					failures = addNodeConditionFailure(failures, node.Name, nodeCondition, common.SeverityCritical)
 				}
 			// k3s `EtcdIsVoter`` should not be reported as an error
 			case v1.NodeConditionType("EtcdIsVoter"):
@@ -57,7 +57,7 @@ func (NodeAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 				// - Report True or Unknown status as failures (for standard conditions)
 				// - Report any unknown condition type as a failure
 				if nodeCondition.Status == v1.ConditionTrue || nodeCondition.Status == v1.ConditionUnknown || !isKnownNodeConditionType(nodeCondition.Type) {
-					failures = addNodeConditionFailure(failures, node.Name, nodeCondition)
+					failures = addNodeConditionFailure(failures, node.Name, nodeCondition, common.SeverityHigh)
 				}
 			}
 		}
@@ -89,7 +89,7 @@ func (NodeAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 	return a.Results, err
 }
 
-func addNodeConditionFailure(failures []common.Failure, nodeName string, nodeCondition v1.NodeCondition) []common.Failure {
+func addNodeConditionFailure(failures []common.Failure, nodeName string, nodeCondition v1.NodeCondition, severity common.Severity) []common.Failure {
 	failures = append(failures, common.Failure{
 		Text: fmt.Sprintf("%s has condition of type %s, reason %s: %s", nodeName, nodeCondition.Type, nodeCondition.Reason, nodeCondition.Message),
 		Sensitive: []common.Sensitive{
@@ -97,6 +97,16 @@ func addNodeConditionFailure(failures []common.Failure, nodeName string, nodeCon
 				Unmasked: nodeName,
 				Masked:   util.MaskString(nodeName),
 			},
+		},
+		Severity: severity,
+		Remediation: &common.Remediation{
+			Type:        common.RemediationTypeInvestigation,
+			Description: fmt.Sprintf("Node %s has unhealthy condition %s. Investigate node status and resource usage.", nodeName, nodeCondition.Type),
+			Steps: []string{
+				fmt.Sprintf("kubectl describe node %s", nodeName),
+				fmt.Sprintf("kubectl top node %s", nodeName),
+			},
+			Risk: "No changes made; investigation only",
 		},
 	})
 	return failures
