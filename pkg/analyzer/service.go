@@ -83,6 +83,14 @@ func (ServiceAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 							Masked:   util.MaskString(v),
 						},
 					},
+					Severity: common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeCommand,
+						Command:     fmt.Sprintf("kubectl get pods -l %s=%s -n %s", k, v, ep.Namespace),
+						CommandArgs: []string{"kubectl", "get", "pods", "-l", fmt.Sprintf("%s=%s", k, v), "-n", ep.Namespace},
+						Description: "List pods matching the service selector to verify if any exist",
+						Risk:        "Read-only command; no changes made",
+					},
 				})
 			}
 		} else {
@@ -108,6 +116,16 @@ func (ServiceAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 					Text:          fmt.Sprintf("Service has not ready endpoints, pods: %s, expected %d", pods, count),
 					KubernetesDoc: doc,
 					Sensitive:     []common.Sensitive{},
+					Severity:      common.SeverityMedium,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "Some endpoint pods are not ready. Check pod readiness probes and status.",
+						Steps: []string{
+							fmt.Sprintf("kubectl describe endpoints %s -n %s", ep.Name, ep.Namespace),
+							fmt.Sprintf("kubectl get pods -n %s | grep -v Running", ep.Namespace),
+						},
+						Risk: "No changes made; investigation only",
+					},
 				})
 			}
 		}
@@ -123,7 +141,17 @@ func (ServiceAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 		for _, event := range events.Items {
 			if event.Type != "Normal" {
 				failures = append(failures, common.Failure{
-					Text: fmt.Sprintf("Service %s/%s has event %s", ep.Namespace, ep.Name, event.Message),
+					Text:     fmt.Sprintf("Service %s/%s has event %s", ep.Namespace, ep.Name, event.Message),
+					Severity: common.SeverityLow,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "Service has warning events. Check event details for more information.",
+						Steps: []string{
+							fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", ep.Namespace, ep.Name),
+							fmt.Sprintf("kubectl describe service %s -n %s", ep.Name, ep.Namespace),
+						},
+						Risk: "No changes made; investigation only",
+					},
 				})
 			}
 		}
