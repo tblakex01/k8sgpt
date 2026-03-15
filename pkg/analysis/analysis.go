@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +54,7 @@ type Analysis struct {
 	WithDoc            bool
 	WithStats          bool
 	Stats              []common.AnalysisStats
+	SeverityThreshold  string
 }
 
 type (
@@ -544,4 +546,41 @@ func (a *Analysis) Close() {
 		return
 	}
 	a.AIClient.Close()
+}
+
+func (a *Analysis) FilterBySeverity() {
+	if a.SeverityThreshold == "" {
+		return
+	}
+	threshold := common.Severity(a.SeverityThreshold)
+	var filtered []common.Result
+	for _, result := range a.Results {
+		var kept []common.Failure
+		for _, f := range result.Error {
+			if f.Severity.Order() >= threshold.Order() {
+				kept = append(kept, f)
+			}
+		}
+		if len(kept) > 0 {
+			result.Error = kept
+			filtered = append(filtered, result)
+		}
+	}
+	a.Results = filtered
+}
+
+func (a *Analysis) SortBySeverity() {
+	sort.Slice(a.Results, func(i, j int) bool {
+		return maxSeverity(a.Results[i].Error) > maxSeverity(a.Results[j].Error)
+	})
+}
+
+func maxSeverity(failures []common.Failure) int {
+	max := 0
+	for _, f := range failures {
+		if o := f.Severity.Order(); o > max {
+			max = o
+		}
+	}
+	return max
 }
