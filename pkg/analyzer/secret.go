@@ -107,6 +107,14 @@ func (SecretAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 								Masked:   util.MaskString(ref.podNamespace),
 							},
 						},
+						Severity: common.SeverityHigh,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeCommand,
+							Command:     fmt.Sprintf("kubectl create secret generic %s -n %s", ref.secretName, ref.secretNamespace),
+							CommandArgs: []string{"kubectl", "create", "secret", "generic", ref.secretName, "-n", ref.secretNamespace},
+							Description: "Create the missing secret so the referencing pod can start.",
+							Risk:        "Creates an empty secret; you must add the required data keys",
+						},
 					}
 
 					preAnalysisKey := fmt.Sprintf("%s/%s", ref.secretNamespace, ref.secretName)
@@ -168,6 +176,16 @@ func (SecretAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 						Unmasked: secret.Namespace,
 						Masked:   util.MaskString(secret.Namespace),
 					},
+				},
+				Severity: common.SeverityMedium,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "Review the secret and consider splitting it into multiple smaller secrets.",
+					Steps: []string{
+						fmt.Sprintf("kubectl get secret %s -n %s -o json | jq '.data | keys'", secret.Name, secret.Namespace),
+						"Identify data keys that can be moved to separate secrets or external secret stores",
+					},
+					Risk: "Oversized secrets may hit etcd size limits and cause API server issues",
 				},
 			})
 		}
@@ -304,6 +322,16 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 					Masked:   util.MaskString(secret.Namespace),
 				},
 			},
+			Severity: common.SeverityHigh,
+			Remediation: &common.Remediation{
+				Type:        common.RemediationTypeInvestigation,
+				Description: "Regenerate the TLS secret with a valid certificate.",
+				Steps: []string{
+					fmt.Sprintf("kubectl describe secret %s -n %s", secret.Name, secret.Namespace),
+					"Regenerate the TLS certificate and update the secret with the correct tls.crt data",
+				},
+				Risk: "Services depending on this TLS secret will not have a valid certificate",
+			},
 		})
 		return failures
 	}
@@ -324,6 +352,16 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 					Unmasked: secret.Namespace,
 					Masked:   util.MaskString(secret.Namespace),
 				},
+			},
+			Severity: common.SeverityHigh,
+			Remediation: &common.Remediation{
+				Type:        common.RemediationTypeInvestigation,
+				Description: "Regenerate the TLS secret with a valid private key.",
+				Steps: []string{
+					fmt.Sprintf("kubectl describe secret %s -n %s", secret.Name, secret.Namespace),
+					"Regenerate the TLS private key and update the secret with the correct tls.key data",
+				},
+				Risk: "Services depending on this TLS secret will not have a valid private key",
 			},
 		})
 		return failures
@@ -370,6 +408,17 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 						Masked:   util.MaskString(ingressName),
 					},
 				},
+				Severity: common.SeverityHigh,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "Renew the expiring TLS certificate before it expires.",
+					Steps: []string{
+						fmt.Sprintf("kubectl describe secret %s -n %s", secret.Name, secret.Namespace),
+						"Check if cert-manager or another certificate automation tool is configured",
+						"Renew the certificate and update the secret",
+					},
+					Risk: "Expired certificates will cause TLS errors for clients connecting via the Ingress",
+				},
 			})
 		}
 
@@ -391,6 +440,17 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 						Unmasked: secret.Namespace,
 						Masked:   util.MaskString(secret.Namespace),
 					},
+				},
+				Severity: common.SeverityHigh,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "Renew the expiring TLS certificate before it expires.",
+					Steps: []string{
+						fmt.Sprintf("kubectl describe secret %s -n %s", secret.Name, secret.Namespace),
+						"Check if cert-manager or another certificate automation tool is configured",
+						"Renew the certificate and update the secret",
+					},
+					Risk: "Expired certificates will cause TLS errors for services using this secret",
 				},
 			})
 		}
