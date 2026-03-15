@@ -51,6 +51,12 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 	for _, ds := range list.Items {
 		var failures []common.Failure
 
+		// Derive the label selector string from the DaemonSet's spec selector
+		labelSelector := ""
+		if ds.Spec.Selector != nil {
+			labelSelector = metav1.FormatLabelSelector(ds.Spec.Selector)
+		}
+
 		if ds.Status.DesiredNumberScheduled != ds.Status.CurrentNumberScheduled {
 			doc := apiDoc.GetApiDocV2("status.desiredNumberScheduled")
 			failures = append(failures, common.Failure{
@@ -108,7 +114,7 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 					Description: "DaemonSet has unavailable pods. Check pod status on each node.",
 					Steps: []string{
 						fmt.Sprintf("kubectl describe daemonset %s -n %s", ds.Name, ds.Namespace),
-						fmt.Sprintf("kubectl get pods -n %s -l %s -o wide", ds.Namespace, fmt.Sprintf("app=%s", ds.Name)),
+						fmt.Sprintf("kubectl get pods -n %s -l %s -o wide", ds.Namespace, labelSelector),
 						fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", ds.Namespace, ds.Name),
 					},
 					Risk: "Unavailable pods mean some nodes are not running the DaemonSet workload",
@@ -140,7 +146,7 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 					Description: "DaemonSet has pods running on nodes where they should not be scheduled.",
 					Steps: []string{
 						fmt.Sprintf("kubectl describe daemonset %s -n %s", ds.Name, ds.Namespace),
-						fmt.Sprintf("kubectl get pods -n %s -l %s -o wide", ds.Namespace, fmt.Sprintf("app=%s", ds.Name)),
+						fmt.Sprintf("kubectl get pods -n %s -l %s -o wide", ds.Namespace, labelSelector),
 						"Review node selectors and affinity rules for the DaemonSet",
 					},
 					Risk: "Misscheduled pods consume resources on unintended nodes",
@@ -150,7 +156,7 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 
 		// Check for warning events
 		events, err := a.Client.GetClient().CoreV1().Events(ds.Namespace).List(a.Context, metav1.ListOptions{
-			FieldSelector: "involvedObject.name=" + ds.Name,
+			FieldSelector: "involvedObject.name=" + ds.Name + ",involvedObject.kind=DaemonSet",
 		})
 		if err == nil {
 			for _, event := range events.Items {

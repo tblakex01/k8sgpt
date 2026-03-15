@@ -458,11 +458,19 @@ func (a *Analysis) GetAIResults(output string, anonymize bool) error {
 			bar.Describe(fmt.Sprintf("Analyzing %s", analysis.Kind))
 		}
 
-		for _, failure := range analysis.Error {
+		for i, failure := range analysis.Error {
 			if anonymize {
 				for _, s := range failure.Sensitive {
 					failure.Text = util.ReplaceIfMatch(failure.Text, s.Unmasked, s.Masked)
+					if failure.Remediation != nil {
+						failure.Remediation.Description = util.ReplaceIfMatch(failure.Remediation.Description, s.Unmasked, s.Masked)
+						failure.Remediation.Command = util.ReplaceIfMatch(failure.Remediation.Command, s.Unmasked, s.Masked)
+						for j, step := range failure.Remediation.Steps {
+							failure.Remediation.Steps[j] = util.ReplaceIfMatch(step, s.Unmasked, s.Masked)
+						}
+					}
 				}
+				analysis.Error[i] = failure
 			}
 			texts = append(texts, failure.Text)
 		}
@@ -558,7 +566,7 @@ func (a *Analysis) FilterBySeverity() {
 	for _, result := range a.Results {
 		var kept []common.Failure
 		for _, f := range result.Error {
-			if f.Severity.Order() >= threshold.Order() {
+			if f.Severity == "" || f.Severity.Order() >= threshold.Order() {
 				kept = append(kept, f)
 			}
 		}

@@ -591,7 +591,16 @@ func TestSecretAnalyzerMalformedPEM(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(results))
+	require.Equal(t, 1, len(results))
+
+	found := false
+	for _, f := range results[0].Error {
+		if strings.Contains(f.Text, "invalid PEM data") {
+			found = true
+			require.Equal(t, common.SeverityHigh, f.Severity)
+		}
+	}
+	require.True(t, found, "expected failure mentioning invalid PEM data")
 }
 
 func TestSecretAnalyzerOversized(t *testing.T) {

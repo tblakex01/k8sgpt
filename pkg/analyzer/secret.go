@@ -63,7 +63,7 @@ func (SecretAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 	var preAnalysis = map[string]common.PreAnalysis{}
 
 	// Phase 1: Pod-centric — find dangling secret references
-	pods, err := a.Client.GetClient().CoreV1().Pods(a.Namespace).List(a.Context, metav1.ListOptions{})
+	pods, err := a.Client.GetClient().CoreV1().Pods(a.Namespace).List(a.Context, metav1.ListOptions{LabelSelector: a.LabelSelector})
 	if err != nil {
 		return nil, err
 	}
@@ -81,9 +81,11 @@ func (SecretAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 
 			_, err := a.Client.GetClient().CoreV1().Secrets(ref.secretNamespace).Get(a.Context, ref.secretName, metav1.GetOptions{})
 			if err != nil {
+				var failure common.Failure
+				doc := apiDoc.GetApiDocV2("metadata.name")
+
 				if k8serrors.IsNotFound(err) {
-					doc := apiDoc.GetApiDocV2("metadata.name")
-					failure := common.Failure{
+					failure = common.Failure{
 						Text: fmt.Sprintf(
 							"Secret %s/%s is referenced by Pod %s/%s but does not exist.",
 							ref.secretNamespace, ref.secretName, ref.podNamespace, ref.podName,
@@ -116,21 +118,49 @@ func (SecretAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 							Risk:        "Creates an empty secret; you must add the required data keys",
 						},
 					}
-
-					preAnalysisKey := fmt.Sprintf("%s/%s", ref.secretNamespace, ref.secretName)
-					if existing, ok := preAnalysis[preAnalysisKey]; ok {
-						existing.FailureDetails = append(existing.FailureDetails, failure)
-						preAnalysis[preAnalysisKey] = existing
-					} else {
-						preAnalysis[preAnalysisKey] = common.PreAnalysis{
-							Secret: corev1.Secret{
-								ObjectMeta: metav1.ObjectMeta{
-									Name:      ref.secretName,
-									Namespace: ref.secretNamespace,
-								},
+				} else {
+					failure = common.Failure{
+						Text: fmt.Sprintf(
+							"Failed to verify secret %s/%s: %v",
+							ref.secretNamespace, ref.secretName, err,
+						),
+						KubernetesDoc: doc,
+						Sensitive: []common.Sensitive{
+							{
+								Unmasked: ref.secretName,
+								Masked:   util.MaskString(ref.secretName),
 							},
-							FailureDetails: []common.Failure{failure},
-						}
+							{
+								Unmasked: ref.secretNamespace,
+								Masked:   util.MaskString(ref.secretNamespace),
+							},
+						},
+						Severity: common.SeverityMedium,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeInvestigation,
+							Description: "Investigate the API error when fetching the secret.",
+							Steps: []string{
+								fmt.Sprintf("kubectl get secret %s -n %s", ref.secretName, ref.secretNamespace),
+								"Check RBAC permissions and API server connectivity",
+							},
+							Risk: "The secret may or may not exist; the analyzer could not verify it",
+						},
+					}
+				}
+
+				preAnalysisKey := fmt.Sprintf("%s/%s", ref.secretNamespace, ref.secretName)
+				if existing, ok := preAnalysis[preAnalysisKey]; ok {
+					existing.FailureDetails = append(existing.FailureDetails, failure)
+					preAnalysis[preAnalysisKey] = existing
+				} else {
+					preAnalysis[preAnalysisKey] = common.PreAnalysis{
+						Secret: corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      ref.secretName,
+								Namespace: ref.secretNamespace,
+							},
+						},
+						FailureDetails: []common.Failure{failure},
 					}
 				}
 			}
@@ -370,29 +400,98 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 	// Parse the certificate
 	block, _ := pem.Decode(certData)
 	if block == nil {
-		// Malformed PEM — graceful skip
+		doc := apiDoc.GetApiDocV2("data")
+		failures = append(failures, common.Failure{
+			Text: fmt.Sprintf("TLS Secret %s/%s has invalid PEM data in tls.crt", secret.Namespace, secret.Name),
+			KubernetesDoc: doc,
+			Sensitive: []common.Sensitive{
+				{
+					Unmasked: secret.Name,
+					Masked:   util.MaskString(secret.Name),
+				},
+				{
+					Unmasked: secret.Namespace,
+					Masked:   util.MaskString(secret.Namespace),
+				},
+			},
+			Severity: common.SeverityHigh,
+			Remediation: &common.Remediation{
+				Type:        common.RemediationTypeInvestigation,
+				Description: "The tls.crt field does not contain valid PEM-encoded data. Regenerate the TLS secret with a valid certificate.",
+				Steps: []string{
+					fmt.Sprintf("kubectl get secret %s -n %s -o jsonpath='{.data.tls\\.crt}' | base64 -d", secret.Name, secret.Namespace),
+					"Regenerate the TLS certificate and update the secret",
+				},
+				Risk: "Services depending on this TLS secret will not have a valid certificate",
+			},
+		})
 		return failures
 	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		// Failed to parse cert — graceful skip
+		doc := apiDoc.GetApiDocV2("data")
+		failures = append(failures, common.Failure{
+			Text: fmt.Sprintf("TLS Secret %s/%s has unparseable certificate: %v", secret.Namespace, secret.Name, err),
+			KubernetesDoc: doc,
+			Sensitive: []common.Sensitive{
+				{
+					Unmasked: secret.Name,
+					Masked:   util.MaskString(secret.Name),
+				},
+				{
+					Unmasked: secret.Namespace,
+					Masked:   util.MaskString(secret.Namespace),
+				},
+			},
+			Severity: common.SeverityHigh,
+			Remediation: &common.Remediation{
+				Type:        common.RemediationTypeInvestigation,
+				Description: "The tls.crt field contains PEM data but the certificate cannot be parsed. Regenerate the TLS secret with a valid certificate.",
+				Steps: []string{
+					fmt.Sprintf("kubectl get secret %s -n %s -o jsonpath='{.data.tls\\.crt}' | base64 -d | openssl x509 -text -noout", secret.Name, secret.Namespace),
+					"Regenerate the TLS certificate and update the secret",
+				},
+				Risk: "Services depending on this TLS secret will not have a valid certificate",
+			},
+		})
 		return failures
 	}
 
 	// Check certificate expiry
 	daysUntilExpiry := int(math.Floor(time.Until(cert.NotAfter).Hours() / 24))
 	if daysUntilExpiry <= certExpiryWarningDays {
+		// Determine message text and severity based on whether cert is already expired
+		var expiryText string
+		var expirySeverity common.Severity
+		var remediationDesc string
+		if daysUntilExpiry < 0 {
+			daysExpiredAgo := -daysUntilExpiry
+			expiryText = fmt.Sprintf("TLS Secret %s/%s certificate expired %d days ago", secret.Namespace, secret.Name, daysExpiredAgo)
+			expirySeverity = common.SeverityCritical
+			remediationDesc = "The TLS certificate has already expired. Renew it immediately."
+		} else {
+			expiryText = fmt.Sprintf("Secret %s/%s has a TLS certificate expiring in %d days.", secret.Namespace, secret.Name, daysUntilExpiry)
+			expirySeverity = common.SeverityHigh
+			remediationDesc = "Renew the expiring TLS certificate before it expires."
+		}
+
 		// Cross-reference Ingresses using this secret
 		ingressNames := findIngressesUsingSecret(a, secret.Namespace, secret.Name)
 
 		for _, ingressName := range ingressNames {
 			doc := apiDoc.GetApiDocV2("data")
-			failures = append(failures, common.Failure{
-				Text: fmt.Sprintf(
+			var text string
+			if daysUntilExpiry < 0 {
+				text = fmt.Sprintf("%s, used by Ingress %s.", expiryText, ingressName)
+			} else {
+				text = fmt.Sprintf(
 					"Secret %s/%s has a TLS certificate expiring in %d days, used by Ingress %s.",
 					secret.Namespace, secret.Name, daysUntilExpiry, ingressName,
-				),
+				)
+			}
+			failures = append(failures, common.Failure{
+				Text:          text,
 				KubernetesDoc: doc,
 				Sensitive: []common.Sensitive{
 					{
@@ -408,10 +507,10 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 						Masked:   util.MaskString(ingressName),
 					},
 				},
-				Severity: common.SeverityHigh,
+				Severity: expirySeverity,
 				Remediation: &common.Remediation{
 					Type:        common.RemediationTypeInvestigation,
-					Description: "Renew the expiring TLS certificate before it expires.",
+					Description: remediationDesc,
 					Steps: []string{
 						fmt.Sprintf("kubectl describe secret %s -n %s", secret.Name, secret.Namespace),
 						"Check if cert-manager or another certificate automation tool is configured",
@@ -426,10 +525,7 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 		if len(ingressNames) == 0 {
 			doc := apiDoc.GetApiDocV2("data")
 			failures = append(failures, common.Failure{
-				Text: fmt.Sprintf(
-					"Secret %s/%s has a TLS certificate expiring in %d days.",
-					secret.Namespace, secret.Name, daysUntilExpiry,
-				),
+				Text:          expiryText,
 				KubernetesDoc: doc,
 				Sensitive: []common.Sensitive{
 					{
@@ -441,10 +537,10 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 						Masked:   util.MaskString(secret.Namespace),
 					},
 				},
-				Severity: common.SeverityHigh,
+				Severity: expirySeverity,
 				Remediation: &common.Remediation{
 					Type:        common.RemediationTypeInvestigation,
-					Description: "Renew the expiring TLS certificate before it expires.",
+					Description: remediationDesc,
 					Steps: []string{
 						fmt.Sprintf("kubectl describe secret %s -n %s", secret.Name, secret.Namespace),
 						"Check if cert-manager or another certificate automation tool is configured",

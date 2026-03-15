@@ -97,8 +97,8 @@ type Failure struct {
 }
 
 type Sensitive struct {
-	Unmasked string
-	Masked   string
+	Unmasked string `json:"-"`
+	Masked   string `json:"masked,omitempty"`
 }
 
 type Severity string

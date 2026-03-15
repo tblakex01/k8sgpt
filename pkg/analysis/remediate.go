@@ -33,6 +33,11 @@ func isTerminal() bool {
 }
 
 func (a *Analysis) RunRemediation(dryRun bool) error {
+	// Validate that kubectl is available on the system
+	if _, err := exec.LookPath("kubectl"); err != nil {
+		return fmt.Errorf("kubectl not found in PATH: %w", err)
+	}
+
 	for _, result := range a.Results {
 		for _, failure := range result.Error {
 			if failure.Remediation == nil {
@@ -42,6 +47,13 @@ func (a *Analysis) RunRemediation(dryRun bool) error {
 				continue
 			}
 			if len(failure.Remediation.CommandArgs) == 0 {
+				continue
+			}
+
+			// Validate that the command binary is kubectl to prevent arbitrary execution
+			if failure.Remediation.CommandArgs[0] != "kubectl" {
+				color.Yellow("Skipping remediation with disallowed binary %q (only kubectl is allowed): %s",
+					failure.Remediation.CommandArgs[0], failure.Text)
 				continue
 			}
 

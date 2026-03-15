@@ -54,6 +54,12 @@ func (d DeploymentAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) 
 
 	for _, deployment := range deployments.Items {
 		var failures []common.Failure
+
+		// Derive the label selector string from the Deployment's spec selector
+		labelSelector := ""
+		if deployment.Spec.Selector != nil {
+			labelSelector = v1.FormatLabelSelector(deployment.Spec.Selector)
+		}
 		if *deployment.Spec.Replicas != deployment.Status.ReadyReplicas {
 			if  deployment.Status.Replicas > *deployment.Spec.Replicas {
 				doc := apiDoc.GetApiDocV2("spec.replicas")
@@ -105,7 +111,7 @@ func (d DeploymentAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) 
 						Description: "Deployment has fewer available replicas than desired. Check pod status and events.",
 						Steps: []string{
 							fmt.Sprintf("kubectl describe deployment %s -n %s", deployment.Name, deployment.Namespace),
-							fmt.Sprintf("kubectl get pods -l app=%s -n %s", deployment.Name, deployment.Namespace),
+							fmt.Sprintf("kubectl get pods -l %s -n %s", labelSelector, deployment.Namespace),
 						},
 						Risk: "No changes made; investigation only",
 					},
