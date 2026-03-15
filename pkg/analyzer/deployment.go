@@ -70,7 +70,18 @@ func (d DeploymentAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) 
 							Unmasked: deployment.Name,
 							Masked:   util.MaskString(deployment.Name),
 						},
-					}})
+					},
+					Severity: common.SeverityMedium,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "Deployment status has not been updated yet after scaling. Wait for the controller to reconcile or check events.",
+						Steps: []string{
+							fmt.Sprintf("kubectl describe deployment %s -n %s", deployment.Name, deployment.Namespace),
+							fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", deployment.Namespace, deployment.Name),
+						},
+						Risk: "No changes made; investigation only",
+					},
+				})
 
 			} else {
 				doc := apiDoc.GetApiDocV2("spec.replicas")
@@ -87,8 +98,19 @@ func (d DeploymentAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) 
 							Unmasked: deployment.Name,
 							Masked:   util.MaskString(deployment.Name),
 						},
-					}})
-				}
+					},
+					Severity: common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "Deployment has fewer available replicas than desired. Check pod status and events.",
+						Steps: []string{
+							fmt.Sprintf("kubectl describe deployment %s -n %s", deployment.Name, deployment.Namespace),
+							fmt.Sprintf("kubectl get pods -l app=%s -n %s", deployment.Name, deployment.Namespace),
+						},
+						Risk: "No changes made; investigation only",
+					},
+				})
+			}
 		}
 		if len(failures) > 0 {
 			preAnalysis[fmt.Sprintf("%s/%s", deployment.Namespace, deployment.Name)] = common.PreAnalysis{
