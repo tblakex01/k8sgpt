@@ -85,6 +85,14 @@ func (ConfigMapAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 			failures = append(failures, common.Failure{
 				Text:      fmt.Sprintf("ConfigMap %s is not used by any pods in the namespace", cm.Name),
 				Sensitive: []common.Sensitive{},
+				Severity:  common.SeverityLow,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeCommand,
+					Command:     fmt.Sprintf("kubectl delete configmap %s -n %s", cm.Name, cm.Namespace),
+					CommandArgs: []string{"kubectl", "delete", "configmap", cm.Name, "-n", cm.Namespace},
+					Description: "Delete the unused ConfigMap if it is no longer needed.",
+					Risk:        "ConfigMap will be permanently deleted; ensure no future workloads depend on it",
+				},
 			})
 		}
 
@@ -93,6 +101,16 @@ func (ConfigMapAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 			failures = append(failures, common.Failure{
 				Text:      fmt.Sprintf("ConfigMap %s is empty", cm.Name),
 				Sensitive: []common.Sensitive{},
+				Severity:  common.SeverityLow,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "Verify whether the empty ConfigMap is intentional or if data should be added.",
+					Steps: []string{
+						fmt.Sprintf("kubectl describe configmap %s -n %s", cm.Name, cm.Namespace),
+						fmt.Sprintf("kubectl get pods -n %s -o json | jq '.items[].spec.volumes[]?.configMap.name' | grep %s", cm.Namespace, cm.Name),
+					},
+					Risk: "No immediate risk; empty ConfigMaps may be intentional placeholders",
+				},
 			})
 		}
 
@@ -108,6 +126,16 @@ func (ConfigMapAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 			failures = append(failures, common.Failure{
 				Text:      fmt.Sprintf("ConfigMap %s is larger than 1MB (%d bytes)", cm.Name, totalSize),
 				Sensitive: []common.Sensitive{},
+				Severity:  common.SeverityMedium,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "Review the ConfigMap and consider splitting it into multiple smaller ConfigMaps.",
+					Steps: []string{
+						fmt.Sprintf("kubectl get configmap %s -n %s -o json | jq '.data | keys'", cm.Name, cm.Namespace),
+						"Identify keys that can be moved to separate ConfigMaps or external storage",
+					},
+					Risk: "Oversized ConfigMaps may hit etcd size limits and cause API server issues",
+				},
 			})
 		}
 
