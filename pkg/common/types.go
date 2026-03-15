@@ -89,14 +89,60 @@ type AnalysisStats struct {
 }
 
 type Failure struct {
-	Text          string
-	KubernetesDoc string
-	Sensitive     []Sensitive
+	Text          string       `json:"text"`
+	KubernetesDoc string       `json:"kubernetesDoc,omitempty"`
+	Sensitive     []Sensitive  `json:"sensitive,omitempty"`
+	Severity      Severity     `json:"severity"`
+	Remediation   *Remediation `json:"remediation,omitempty"`
 }
 
 type Sensitive struct {
 	Unmasked string
 	Masked   string
+}
+
+type Severity string
+
+const (
+	SeverityCritical Severity = "critical"
+	SeverityHigh     Severity = "high"
+	SeverityMedium   Severity = "medium"
+	SeverityLow      Severity = "low"
+)
+
+func (s Severity) Order() int {
+	switch s {
+	case SeverityCritical:
+		return 4
+	case SeverityHigh:
+		return 3
+	case SeverityMedium:
+		return 2
+	case SeverityLow:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func (s Severity) IsValid() bool {
+	return s.Order() > 0
+}
+
+type RemediationType string
+
+const (
+	RemediationTypeCommand       RemediationType = "command"
+	RemediationTypeInvestigation RemediationType = "investigation"
+)
+
+type Remediation struct {
+	Type        RemediationType `json:"type"`
+	Command     string          `json:"command,omitempty"`
+	CommandArgs []string        `json:"commandArgs,omitempty"`
+	Description string          `json:"description"`
+	Steps       []string        `json:"steps,omitempty"`
+	Risk        string          `json:"risk"`
 }
 
 type (
