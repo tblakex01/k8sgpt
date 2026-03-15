@@ -68,11 +68,12 @@ const (
 )
 
 type JsonOutput struct {
-	Provider string          `json:"provider"`
-	Errors   AnalysisErrors  `json:"errors"`
-	Status   AnalysisStatus  `json:"status"`
-	Problems int             `json:"problems"`
-	Results  []common.Result `json:"results"`
+	Provider string                 `json:"provider"`
+	Errors   AnalysisErrors         `json:"errors"`
+	Status   AnalysisStatus         `json:"status"`
+	Problems int                    `json:"problems"`
+	Results  []common.Result        `json:"results"`
+	Summary  FailureSeveritySummary `json:"summary"`
 }
 
 func NewAnalysis(

@@ -217,6 +217,7 @@ func TestAnalysis_ProblemJsonOutput(t *testing.T) {
 				Details:      "test-solution",
 				ParentObject: "parent-resource"},
 		},
+		Summary: FailureSeveritySummary{Unknown: 1},
 	}
 
 	gotJson, err := analysis.PrintOutput("json")
@@ -276,6 +277,7 @@ func TestAnalysis_MultipleProblemJsonOutput(t *testing.T) {
 				Details:      "test-solution",
 				ParentObject: "parent-resource"},
 		},
+		Summary: FailureSeveritySummary{Unknown: 2},
 	}
 
 	gotJson, err := analysis.PrintOutput("json")
