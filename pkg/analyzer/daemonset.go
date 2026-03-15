@@ -76,7 +76,7 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 					Description: "DaemonSet scheduling gap detected. Some nodes are not running the expected pods.",
 					Steps: []string{
 						fmt.Sprintf("kubectl describe daemonset %s -n %s", ds.Name, ds.Namespace),
-						fmt.Sprintf("kubectl get nodes --show-labels"),
+						"kubectl get nodes --show-labels",
 						"Check node taints, tolerations, and node selectors that may prevent scheduling",
 					},
 					Risk: "Nodes without the DaemonSet pod may lack critical functionality",

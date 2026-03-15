@@ -122,9 +122,9 @@ func (a *Analysis) textOutput() ([]byte, error) {
 		for _, err := range result.Error {
 			severityTag := severityTagString(err.Severity)
 			if severityTag != "" {
-				output.WriteString(fmt.Sprintf("- %s %s %s\n", severityTag, color.RedString("Error:"), color.RedString(err.Text)))
+				fmt.Fprintf(&output, "- %s %s %s\n", severityTag, color.RedString("Error:"), color.RedString(err.Text))
 			} else {
-				output.WriteString(fmt.Sprintf("- %s %s\n", color.RedString("Error:"), color.RedString(err.Text)))
+				fmt.Fprintf(&output, "- %s %s\n", color.RedString("Error:"), color.RedString(err.Text))
 			}
 			if err.KubernetesDoc != "" {
 				output.WriteString(fmt.Sprintf("  %s %s\n", color.RedString("Kubernetes Doc:"), color.RedString(err.KubernetesDoc)))
@@ -132,12 +132,12 @@ func (a *Analysis) textOutput() ([]byte, error) {
 			if err.Remediation != nil {
 				switch err.Remediation.Type {
 				case common.RemediationTypeCommand:
-					output.WriteString(fmt.Sprintf("  Remediation: %s\n", err.Remediation.Command))
-					output.WriteString(fmt.Sprintf("  Risk: %s\n", err.Remediation.Risk))
+					fmt.Fprintf(&output, "  Remediation: %s\n", err.Remediation.Command)
+					fmt.Fprintf(&output, "  Risk: %s\n", err.Remediation.Risk)
 				case common.RemediationTypeInvestigation:
 					output.WriteString("  Investigation steps:\n")
 					for _, step := range err.Remediation.Steps {
-						output.WriteString(fmt.Sprintf("  - %s\n", step))
+						fmt.Fprintf(&output, "  - %s\n", step)
 					}
 				}
 			}

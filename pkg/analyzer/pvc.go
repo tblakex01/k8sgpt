@@ -61,8 +61,8 @@ func (PvcAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 						Description: "PVC provisioning failed. Check storage provisioner, PersistentVolume availability, and storage class configuration.",
 						Steps: []string{
 							fmt.Sprintf("kubectl describe pvc %s -n %s", pvc.Name, pvc.Namespace),
-							fmt.Sprintf("kubectl get pv"),
-							fmt.Sprintf("kubectl get storageclass"),
+							"kubectl get pv",
+							"kubectl get storageclass",
 							fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", pvc.Namespace, pvc.Name),
 						},
 						Risk: "No changes made; investigation only",
