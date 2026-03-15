@@ -33,7 +33,7 @@ func TestPrintOutput(t *testing.T) {
 			name:           "json format",
 			a:              &Analysis{},
 			format:         "json",
-			expectedOutput: "{\n  \"provider\": \"\",\n  \"errors\": null,\n  \"status\": \"OK\",\n  \"problems\": 0,\n  \"results\": null\n}",
+			expectedOutput: "{\n  \"provider\": \"\",\n  \"errors\": null,\n  \"status\": \"OK\",\n  \"problems\": 0,\n  \"results\": null,\n  \"summary\": {\n    \"critical\": 0,\n    \"high\": 0,\n    \"medium\": 0,\n    \"low\": 0,\n    \"unknown\": 0\n  }\n}",
 		},
 		{
 			name:           "text format",

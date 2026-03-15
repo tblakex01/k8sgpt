@@ -51,6 +51,16 @@ func (ReplicaSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 					failures = append(failures, common.Failure{
 						Text:      rsStatus.Message,
 						Sensitive: []common.Sensitive{},
+						Severity:  common.SeverityHigh,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeInvestigation,
+							Description: "ReplicaSet failed to create pods. Check pod template, resource quotas, and events.",
+							Steps: []string{
+								fmt.Sprintf("kubectl describe replicaset %s -n %s", rs.Name, rs.Namespace),
+								fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", rs.Namespace, rs.Name),
+							},
+							Risk: "No changes made; investigation only",
+						},
 					})
 
 				}

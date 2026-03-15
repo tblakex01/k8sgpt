@@ -171,7 +171,7 @@ func TestClusterExtensionAnalyzer(t *testing.T) {
 	for _, res := range results {
 		fmt.Printf("Result: %s | Failures: %d\n", res.Name, len(res.Error))
 		for _, err := range res.Error {
-			fmt.Printf("  - %s\n", err)
+			fmt.Printf("  - %v\n", err)
 		}
 	}
 	require.NoError(t, err)

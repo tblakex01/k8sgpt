@@ -71,6 +71,16 @@ func (IngressAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 							Masked:   util.MaskString(ing.Name),
 						},
 					},
+					Severity: common.SeverityMedium,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "No ingress class specified. List available ingress classes and assign one.",
+						Steps: []string{
+							"kubectl get ingressclasses",
+							fmt.Sprintf("kubectl edit ingress %s -n %s", ing.Name, ing.Namespace),
+						},
+						Risk: "No changes made; investigation only",
+					},
 				})
 			} else {
 				ingressClassName = &ingClassValue
@@ -91,6 +101,16 @@ func (IngressAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 							Unmasked: *ingressClassName,
 							Masked:   util.MaskString(*ingressClassName),
 						},
+					},
+					Severity: common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "Ingress class does not exist. Verify the ingress class name and check available classes.",
+						Steps: []string{
+							"kubectl get ingressclasses",
+							fmt.Sprintf("kubectl describe ingress %s -n %s", ing.Name, ing.Namespace),
+						},
+						Risk: "No changes made; investigation only",
 					},
 				})
 			}
@@ -118,6 +138,16 @@ func (IngressAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 									Masked:   util.MaskString(path.Backend.Service.Name),
 								},
 							},
+							Severity: common.SeverityHigh,
+							Remediation: &common.Remediation{
+								Type:        common.RemediationTypeInvestigation,
+								Description: "Backend service does not exist. Check the service name and namespace.",
+								Steps: []string{
+									fmt.Sprintf("kubectl get services -n %s", ing.Namespace),
+									fmt.Sprintf("kubectl describe ingress %s -n %s", ing.Name, ing.Namespace),
+								},
+								Risk: "No changes made; investigation only",
+							},
 						})
 					}
 				}
@@ -141,6 +171,16 @@ func (IngressAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 							Unmasked: tls.SecretName,
 							Masked:   util.MaskString(tls.SecretName),
 						},
+					},
+					Severity: common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "TLS secret does not exist. Create or check the TLS secret.",
+						Steps: []string{
+							fmt.Sprintf("kubectl get secrets -n %s", ing.Namespace),
+							fmt.Sprintf("kubectl create secret tls %s --cert=<path-to-cert> --key=<path-to-key> -n %s", tls.SecretName, ing.Namespace),
+						},
+						Risk: "No changes made; investigation only",
 					},
 				})
 			}

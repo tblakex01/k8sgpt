@@ -211,13 +211,13 @@ func TestAnalysis_ProblemJsonOutput(t *testing.T) {
 				Name: "test-deployment",
 				Error: []common.Failure{
 					{
-						Text:      "test-problem",
-						Sensitive: []common.Sensitive{},
+						Text: "test-problem",
 					},
 				},
 				Details:      "test-solution",
 				ParentObject: "parent-resource"},
 		},
+		Summary: FailureSeveritySummary{Unknown: 1},
 	}
 
 	gotJson, err := analysis.PrintOutput("json")
@@ -268,17 +268,16 @@ func TestAnalysis_MultipleProblemJsonOutput(t *testing.T) {
 				Name: "test-deployment",
 				Error: []common.Failure{
 					{
-						Text:      "test-problem",
-						Sensitive: []common.Sensitive{},
+						Text: "test-problem",
 					},
 					{
-						Text:      "another-test-problem",
-						Sensitive: []common.Sensitive{},
+						Text: "another-test-problem",
 					},
 				},
 				Details:      "test-solution",
 				ParentObject: "parent-resource"},
 		},
+		Summary: FailureSeveritySummary{Unknown: 2},
 	}
 
 	gotJson, err := analysis.PrintOutput("json")

@@ -22,6 +22,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai/interactive"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/analysis"
+	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -40,8 +41,11 @@ var (
 	withDoc         bool
 	interactiveMode bool
 	customAnalysis  bool
-	customHeaders   []string
-	withStats       bool
+	customHeaders     []string
+	withStats         bool
+	severityThreshold string
+	remediate         bool
+	dryRun            bool
 )
 
 // AnalyzeCmd represents the problems command
@@ -81,6 +85,23 @@ var AnalyzeCmd = &cobra.Command{
 		}
 		defer config.Close()
 
+		if dryRun && !remediate {
+			color.Red("Error: --dry-run requires --remediate")
+			os.Exit(1)
+		}
+		if remediate && !dryRun {
+			fi, err := os.Stdin.Stat()
+			if err != nil || fi.Mode()&os.ModeCharDevice == 0 {
+				color.Red("Error: --remediate requires an interactive terminal; use --dry-run to preview")
+				os.Exit(1)
+			}
+		}
+		if severityThreshold != "" && !common.Severity(severityThreshold).IsValid() {
+			color.Red("Error: invalid severity threshold %q (valid: critical, high, medium, low)", severityThreshold)
+			os.Exit(1)
+		}
+		config.SeverityThreshold = severityThreshold
+
 		if customAnalysis {
 			config.RunCustomAnalysis()
 			if verbose {
@@ -92,6 +113,9 @@ var AnalyzeCmd = &cobra.Command{
 			fmt.Println("Debug: All core analyzers completed.")
 		}
 
+		config.FilterBySeverity()
+		config.SortBySeverity()
+
 		if explain {
 			err := config.GetAIResults(output, anonymize)
 			if verbose {
@@ -102,6 +126,7 @@ var AnalyzeCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
+
 		// print results
 		output_data, err := config.PrintOutput(output)
 		if verbose {
@@ -118,6 +143,13 @@ var AnalyzeCmd = &cobra.Command{
 		}
 
 		fmt.Println(string(output_data))
+
+		if remediate {
+			if err := config.RunRemediation(dryRun); err != nil {
+				color.Red("Error during remediation: %v", err)
+				os.Exit(1)
+			}
+		}
 
 		if interactiveMode && explain {
 			if output == "json" {
@@ -177,4 +209,10 @@ func init() {
 	AnalyzeCmd.Flags().StringVarP(&labelSelector, "selector", "L", "", "Label selector (label query) to filter on, supports '=', '==', and '!='. (e.g. -L key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.")
 	// print stats
 	AnalyzeCmd.Flags().BoolVarP(&withStats, "with-stat", "s", false, "Print analysis stats. This option disables errors display.")
+	// severity threshold flag
+	AnalyzeCmd.Flags().StringVarP(&severityThreshold, "severity-threshold", "S", "", "Filter results by minimum severity (critical, high, medium, low)")
+	// remediate flag
+	AnalyzeCmd.Flags().BoolVar(&remediate, "remediate", false, "Apply suggested remediations interactively")
+	// dry-run flag
+	AnalyzeCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview remediations without applying (requires --remediate)")
 }

@@ -74,6 +74,16 @@ func (MutatingWebhookAnalyzer) Analyze(a common.Analyzer) ([]common.Result, erro
 							Masked:   util.MaskString(svc.Name),
 						},
 					},
+					Severity: common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "The service referenced by the mutating webhook does not exist. Webhook calls will fail.",
+						Steps: []string{
+							fmt.Sprintf("kubectl describe mutatingwebhookconfiguration %s", webhookConfig.Name),
+							fmt.Sprintf("kubectl get svc %s -n %s", svc.Name, svc.Namespace),
+						},
+						Risk: "Webhook failures may block or allow resource operations depending on failurePolicy",
+					},
 				})
 				preAnalysis[fmt.Sprintf("%s/%s", webhookConfig.Namespace, webhook.Name)] = common.PreAnalysis{
 					MutatingWebhook: webhookConfig,
@@ -105,6 +115,17 @@ func (MutatingWebhookAnalyzer) Analyze(a common.Analyzer) ([]common.Result, erro
 							Masked:   util.MaskString(webhookConfig.Namespace),
 						},
 					},
+					Severity: common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "No active pods are backing the webhook service. Webhook calls will fail.",
+						Steps: []string{
+							fmt.Sprintf("kubectl describe mutatingwebhookconfiguration %s", webhookConfig.Name),
+							fmt.Sprintf("kubectl get svc %s -n %s", svc.Name, svc.Namespace),
+							fmt.Sprintf("kubectl get pods -n %s -l %s", svc.Namespace, util.MapToString(service.Spec.Selector)),
+						},
+						Risk: "Webhook failures may block or allow resource operations depending on failurePolicy",
+					},
 				})
 
 			}
@@ -131,6 +152,16 @@ func (MutatingWebhookAnalyzer) Analyze(a common.Analyzer) ([]common.Result, erro
 								Unmasked: pod.Name,
 								Masked:   util.MaskString(pod.Name),
 							},
+						},
+						Severity: common.SeverityHigh,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeInvestigation,
+							Description: "A webhook receiver pod is not running. Webhook calls to this pod will fail.",
+							Steps: []string{
+								fmt.Sprintf("kubectl describe mutatingwebhookconfiguration %s", webhookConfig.Name),
+								fmt.Sprintf("kubectl describe pod %s -n %s", pod.Name, svc.Namespace),
+							},
+							Risk: "Webhook failures may block or allow resource operations depending on failurePolicy",
 						},
 					})
 				}

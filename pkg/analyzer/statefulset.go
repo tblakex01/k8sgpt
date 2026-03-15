@@ -74,6 +74,16 @@ func (StatefulSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 						Masked:   util.MaskString(serviceName),
 					},
 				},
+				Severity: common.SeverityMedium,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "Headless service does not exist. Check the service name and create it if needed.",
+					Steps: []string{
+						fmt.Sprintf("kubectl get services -n %s", sts.Namespace),
+						fmt.Sprintf("kubectl describe statefulset %s -n %s", sts.Name, sts.Namespace),
+					},
+					Risk: "No changes made; investigation only",
+				},
 			})
 		}
 		if len(sts.Spec.VolumeClaimTemplates) > 0 {
@@ -88,6 +98,16 @@ func (StatefulSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 									Unmasked: *volumeClaimTemplate.Spec.StorageClassName,
 									Masked:   util.MaskString(*volumeClaimTemplate.Spec.StorageClassName),
 								},
+							},
+							Severity: common.SeverityMedium,
+							Remediation: &common.Remediation{
+								Type:        common.RemediationTypeInvestigation,
+								Description: "Storage class does not exist. List available storage classes.",
+								Steps: []string{
+									"kubectl get storageclasses",
+									fmt.Sprintf("kubectl describe statefulset %s -n %s", sts.Name, sts.Namespace),
+								},
+								Risk: "No changes made; investigation only",
 							},
 						})
 					}
@@ -107,6 +127,16 @@ func (StatefulSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 						failures = append(failures, common.Failure{
 							Text:      evt.Message,
 							Sensitive: []common.Sensitive{},
+							Severity:  common.SeverityLow,
+							Remediation: &common.Remediation{
+								Type:        common.RemediationTypeInvestigation,
+								Description: "Pod not found and event reported. Check events for details.",
+								Steps: []string{
+									fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", sts.Namespace, sts.Name),
+									fmt.Sprintf("kubectl describe statefulset %s -n %s", sts.Name, sts.Namespace),
+								},
+								Risk: "No changes made; investigation only",
+							},
 						})
 					}
 					break
@@ -123,6 +153,16 @@ func (StatefulSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 								Unmasked: serviceName,
 								Masked:   util.MaskString(pod.Namespace),
 							},
+						},
+						Severity: common.SeverityHigh,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeInvestigation,
+							Description: "StatefulSet pod is not in running state. Describe the pod and check logs.",
+							Steps: []string{
+								fmt.Sprintf("kubectl describe pod %s -n %s", pod.Name, pod.Namespace),
+								fmt.Sprintf("kubectl logs %s -n %s", pod.Name, pod.Namespace),
+							},
+							Risk: "No changes made; investigation only",
 						},
 					})
 					break

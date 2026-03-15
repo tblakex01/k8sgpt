@@ -66,6 +66,14 @@ func (analyzer JobAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) 
 						Masked:   util.MaskString(Job.Name),
 					},
 				},
+				Severity: common.SeverityLow,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeCommand,
+					Command:     fmt.Sprintf("kubectl patch job %s -n %s -p '{\"spec\":{\"suspend\":false}}'", Job.Name, Job.Namespace),
+					CommandArgs: []string{"kubectl", "patch", "job", Job.Name, "-n", Job.Namespace, "-p", `{"spec":{"suspend":false}}`},
+					Description: "Unsuspend the job to allow it to run.",
+					Risk:        "Job will start running immediately",
+				},
 			})
 		}
 		if Job.Status.Failed > 0 {
@@ -82,6 +90,17 @@ func (analyzer JobAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) 
 						Unmasked: Job.Name,
 						Masked:   util.MaskString(Job.Name),
 					},
+				},
+				Severity: common.SeverityHigh,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "Job has failed. Check pod logs and describe the job for details.",
+					Steps: []string{
+						fmt.Sprintf("kubectl describe job %s -n %s", Job.Name, Job.Namespace),
+						fmt.Sprintf("kubectl logs job/%s -n %s", Job.Name, Job.Namespace),
+						fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", Job.Namespace, Job.Name),
+					},
+					Risk: "No changes made; investigation only",
 				},
 			})
 		}

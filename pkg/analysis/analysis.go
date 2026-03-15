@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +54,7 @@ type Analysis struct {
 	WithDoc            bool
 	WithStats          bool
 	Stats              []common.AnalysisStats
+	SeverityThreshold  string
 }
 
 type (
@@ -66,11 +68,12 @@ const (
 )
 
 type JsonOutput struct {
-	Provider string          `json:"provider"`
-	Errors   AnalysisErrors  `json:"errors"`
-	Status   AnalysisStatus  `json:"status"`
-	Problems int             `json:"problems"`
-	Results  []common.Result `json:"results"`
+	Provider string                 `json:"provider"`
+	Errors   AnalysisErrors         `json:"errors"`
+	Status   AnalysisStatus         `json:"status"`
+	Problems int                    `json:"problems"`
+	Results  []common.Result        `json:"results"`
+	Summary  FailureSeveritySummary `json:"summary"`
 }
 
 func NewAnalysis(
@@ -455,11 +458,19 @@ func (a *Analysis) GetAIResults(output string, anonymize bool) error {
 			bar.Describe(fmt.Sprintf("Analyzing %s", analysis.Kind))
 		}
 
-		for _, failure := range analysis.Error {
+		for i, failure := range analysis.Error {
 			if anonymize {
 				for _, s := range failure.Sensitive {
 					failure.Text = util.ReplaceIfMatch(failure.Text, s.Unmasked, s.Masked)
+					if failure.Remediation != nil {
+						failure.Remediation.Description = util.ReplaceIfMatch(failure.Remediation.Description, s.Unmasked, s.Masked)
+						failure.Remediation.Command = util.ReplaceIfMatch(failure.Remediation.Command, s.Unmasked, s.Masked)
+						for j, step := range failure.Remediation.Steps {
+							failure.Remediation.Steps[j] = util.ReplaceIfMatch(step, s.Unmasked, s.Masked)
+						}
+					}
 				}
+				analysis.Error[i] = failure
 			}
 			texts = append(texts, failure.Text)
 		}
@@ -544,4 +555,41 @@ func (a *Analysis) Close() {
 		return
 	}
 	a.AIClient.Close()
+}
+
+func (a *Analysis) FilterBySeverity() {
+	if a.SeverityThreshold == "" {
+		return
+	}
+	threshold := common.Severity(a.SeverityThreshold)
+	var filtered []common.Result
+	for _, result := range a.Results {
+		var kept []common.Failure
+		for _, f := range result.Error {
+			if f.Severity == "" || f.Severity.Order() >= threshold.Order() {
+				kept = append(kept, f)
+			}
+		}
+		if len(kept) > 0 {
+			result.Error = kept
+			filtered = append(filtered, result)
+		}
+	}
+	a.Results = filtered
+}
+
+func (a *Analysis) SortBySeverity() {
+	sort.Slice(a.Results, func(i, j int) bool {
+		return maxSeverity(a.Results[i].Error) > maxSeverity(a.Results[j].Error)
+	})
+}
+
+func maxSeverity(failures []common.Failure) int {
+	max := 0
+	for _, f := range failures {
+		if o := f.Severity.Order(); o > max {
+			max = o
+		}
+	}
+	return max
 }

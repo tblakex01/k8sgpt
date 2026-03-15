@@ -45,6 +45,7 @@ var coreAnalyzerMap = map[string]common.IAnalyzer{
 	"ValidatingWebhookConfiguration": ValidatingWebhookAnalyzer{},
 	"MutatingWebhookConfiguration":   MutatingWebhookAnalyzer{},
 	"ConfigMap":                      ConfigMapAnalyzer{},
+	"DaemonSet":                      DaemonSetAnalyzer{},
 }
 
 var additionalAnalyzerMap = map[string]common.IAnalyzer{
@@ -64,6 +65,7 @@ var additionalAnalyzerMap = map[string]common.IAnalyzer{
 	"InstallPlan":             InstallPlanAnalyzer{},
 	"CatalogSource":           CatalogSourceAnalyzer{},
 	"OperatorGroup":           OperatorGroupAnalyzer{},
+	"Secret":                  SecretAnalyzer{},
 }
 
 func ListFilters() ([]string, []string, []string) {
