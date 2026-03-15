@@ -54,6 +54,16 @@ func (PodAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 						failures = append(failures, common.Failure{
 							Text:      containerStatus.Message,
 							Sensitive: []common.Sensitive{},
+							Severity:  common.SeverityHigh,
+							Remediation: &common.Remediation{
+								Type:        common.RemediationTypeInvestigation,
+								Description: "Pod is unschedulable. Check node resources and scheduling constraints.",
+								Steps: []string{
+									fmt.Sprintf("kubectl describe pod %s -n %s", pod.Name, pod.Namespace),
+									"kubectl get nodes -o wide",
+								},
+								Risk: "No changes made; investigation only",
+							},
 						})
 					}
 				}
@@ -109,6 +119,16 @@ func analyzeContainerStatusFailures(a common.Analyzer, statuses []v1.ContainerSt
 					failures = append(failures, common.Failure{
 						Text:      evt.Message,
 						Sensitive: []common.Sensitive{},
+						Severity:  common.SeverityHigh,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeInvestigation,
+							Description: "Pod sandbox creation or volume mount failed. Check volumes and CSI drivers.",
+							Steps: []string{
+								fmt.Sprintf("kubectl describe pod %s -n %s", name, namespace),
+								fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", namespace, name),
+							},
+							Risk: "No changes made; investigation only",
+						},
 					})
 				}
 			} else if containerStatus.State.Waiting.Reason == "CrashLoopBackOff" && containerStatus.LastTerminationState.Terminated != nil {
@@ -116,11 +136,31 @@ func analyzeContainerStatusFailures(a common.Analyzer, statuses []v1.ContainerSt
 				failures = append(failures, common.Failure{
 					Text:      fmt.Sprintf("the last termination reason is %s container=%s pod=%s", containerStatus.LastTerminationState.Terminated.Reason, containerStatus.Name, name),
 					Sensitive: []common.Sensitive{},
+					Severity:  common.SeverityCritical,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "Container is in CrashLoopBackOff. Check previous logs and pod events.",
+						Steps: []string{
+							fmt.Sprintf("kubectl logs %s -n %s -c %s --previous", name, namespace, containerStatus.Name),
+							fmt.Sprintf("kubectl describe pod %s -n %s", name, namespace),
+						},
+						Risk: "No changes made; investigation only",
+					},
 				})
 			} else if isErrorReason(containerStatus.State.Waiting.Reason) && containerStatus.State.Waiting.Message != "" {
 				failures = append(failures, common.Failure{
 					Text:      containerStatus.State.Waiting.Message,
 					Sensitive: []common.Sensitive{},
+					Severity:  common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "Container is waiting with an error. Check image name, pull secrets, and container configuration.",
+						Steps: []string{
+							fmt.Sprintf("kubectl describe pod %s -n %s", name, namespace),
+							fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", namespace, name),
+						},
+						Risk: "No changes made; investigation only",
+					},
 				})
 			}
 		} else if containerStatus.State.Terminated != nil {
@@ -135,6 +175,16 @@ func analyzeContainerStatusFailures(a common.Analyzer, statuses []v1.ContainerSt
 				failures = append(failures, common.Failure{
 					Text:      fmt.Sprintf("the termination reason is %s exitCode=%d container=%s pod=%s", reason, exitCode, containerStatus.Name, name),
 					Sensitive: []common.Sensitive{},
+					Severity:  common.SeverityHigh,
+					Remediation: &common.Remediation{
+						Type:        common.RemediationTypeInvestigation,
+						Description: "Container terminated with non-zero exit code. Check container logs for error details.",
+						Steps: []string{
+							fmt.Sprintf("kubectl logs %s -n %s -c %s", name, namespace, containerStatus.Name),
+							fmt.Sprintf("kubectl describe pod %s -n %s", name, namespace),
+						},
+						Risk: "No changes made; investigation only",
+					},
 				})
 			}
 		} else {
@@ -149,6 +199,16 @@ func analyzeContainerStatusFailures(a common.Analyzer, statuses []v1.ContainerSt
 					failures = append(failures, common.Failure{
 						Text:      evt.Message,
 						Sensitive: []common.Sensitive{},
+						Severity:  common.SeverityHigh,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeInvestigation,
+							Description: "Readiness or liveness probe is failing. Check probe configuration and container health.",
+							Steps: []string{
+								fmt.Sprintf("kubectl describe pod %s -n %s", name, namespace),
+								fmt.Sprintf("kubectl logs %s -n %s", name, namespace),
+							},
+							Risk: "No changes made; investigation only",
+						},
 					})
 				}
 			}
