@@ -48,10 +48,15 @@ func (a *Analysis) RunRemediation(dryRun bool) error {
 			if dryRun {
 				args := make([]string, len(failure.Remediation.CommandArgs))
 				copy(args, failure.Remediation.CommandArgs)
-				args = append(args, "--dry-run=client")
+
+				// Only append --dry-run=client for mutating kubectl commands
+				mutatingVerbs := map[string]bool{"create": true, "delete": true, "patch": true, "apply": true, "replace": true, "run": true}
+				if len(args) > 1 && mutatingVerbs[args[1]] {
+					args = append(args, "--dry-run=client")
+				}
 
 				fmt.Printf("\n%s %s\n", color.YellowString("[DRY-RUN]"), failure.Text)
-				fmt.Printf("  Command: %s %s\n", failure.Remediation.Command, strings.Join(args, " "))
+				fmt.Printf("  Command: %s\n", strings.Join(args, " "))
 
 				cmd := exec.Command(args[0], args[1:]...) // #nosec G204
 				output, err := cmd.CombinedOutput()
@@ -70,7 +75,7 @@ func (a *Analysis) RunRemediation(dryRun bool) error {
 			}
 
 			fmt.Printf("\n%s %s\n", color.CyanString("[FIX]"), failure.Text)
-			fmt.Printf("  Command: %s %s\n", failure.Remediation.Command, strings.Join(failure.Remediation.CommandArgs, " "))
+			fmt.Printf("  Command: %s\n", failure.Remediation.Command)
 			fmt.Printf("  Risk: %s\n", failure.Remediation.Risk)
 			fmt.Printf("  Apply fix? [y/N] ")
 

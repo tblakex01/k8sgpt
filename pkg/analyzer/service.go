@@ -85,11 +85,12 @@ func (ServiceAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 					},
 					Severity: common.SeverityHigh,
 					Remediation: &common.Remediation{
-						Type:        common.RemediationTypeCommand,
-						Command:     fmt.Sprintf("kubectl get pods -l %s=%s -n %s", k, v, ep.Namespace),
-						CommandArgs: []string{"kubectl", "get", "pods", "-l", fmt.Sprintf("%s=%s", k, v), "-n", ep.Namespace},
+						Type:        common.RemediationTypeInvestigation,
 						Description: "List pods matching the service selector to verify if any exist",
-						Risk:        "Read-only command; no changes made",
+						Steps: []string{
+							fmt.Sprintf("kubectl get pods -l %s=%s -n %s", k, v, ep.Namespace),
+						},
+						Risk: "Read-only command; no changes made",
 					},
 				})
 			}
