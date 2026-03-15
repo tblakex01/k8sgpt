@@ -70,6 +70,17 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 						Masked:   util.MaskString(ds.Namespace),
 					},
 				},
+				Severity: common.SeverityHigh,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "DaemonSet scheduling gap detected. Some nodes are not running the expected pods.",
+					Steps: []string{
+						fmt.Sprintf("kubectl describe daemonset %s -n %s", ds.Name, ds.Namespace),
+						fmt.Sprintf("kubectl get nodes --show-labels"),
+						"Check node taints, tolerations, and node selectors that may prevent scheduling",
+					},
+					Risk: "Nodes without the DaemonSet pod may lack critical functionality",
+				},
 			})
 		}
 
@@ -90,6 +101,17 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 						Unmasked: ds.Namespace,
 						Masked:   util.MaskString(ds.Namespace),
 					},
+				},
+				Severity: common.SeverityHigh,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "DaemonSet has unavailable pods. Check pod status on each node.",
+					Steps: []string{
+						fmt.Sprintf("kubectl describe daemonset %s -n %s", ds.Name, ds.Namespace),
+						fmt.Sprintf("kubectl get pods -n %s -l %s -o wide", ds.Namespace, fmt.Sprintf("app=%s", ds.Name)),
+						fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", ds.Namespace, ds.Name),
+					},
+					Risk: "Unavailable pods mean some nodes are not running the DaemonSet workload",
 				},
 			})
 		}
@@ -112,6 +134,17 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 						Masked:   util.MaskString(ds.Namespace),
 					},
 				},
+				Severity: common.SeverityLow,
+				Remediation: &common.Remediation{
+					Type:        common.RemediationTypeInvestigation,
+					Description: "DaemonSet has pods running on nodes where they should not be scheduled.",
+					Steps: []string{
+						fmt.Sprintf("kubectl describe daemonset %s -n %s", ds.Name, ds.Namespace),
+						fmt.Sprintf("kubectl get pods -n %s -l %s -o wide", ds.Namespace, fmt.Sprintf("app=%s", ds.Name)),
+						"Review node selectors and affinity rules for the DaemonSet",
+					},
+					Risk: "Misscheduled pods consume resources on unintended nodes",
+				},
 			})
 		}
 
@@ -133,6 +166,16 @@ func (DaemonSetAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 								Unmasked: ds.Namespace,
 								Masked:   util.MaskString(ds.Namespace),
 							},
+						},
+						Severity: common.SeverityLow,
+						Remediation: &common.Remediation{
+							Type:        common.RemediationTypeInvestigation,
+							Description: "DaemonSet has warning events that may indicate issues.",
+							Steps: []string{
+								fmt.Sprintf("kubectl get events -n %s --field-selector involvedObject.name=%s", ds.Namespace, ds.Name),
+								fmt.Sprintf("kubectl describe daemonset %s -n %s", ds.Name, ds.Namespace),
+							},
+							Risk: "Warning events may indicate transient or persistent issues with the DaemonSet",
 						},
 					})
 				}
