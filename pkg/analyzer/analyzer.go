@@ -65,6 +65,7 @@ var additionalAnalyzerMap = map[string]common.IAnalyzer{
 	"InstallPlan":             InstallPlanAnalyzer{},
 	"CatalogSource":           CatalogSourceAnalyzer{},
 	"OperatorGroup":           OperatorGroupAnalyzer{},
+	"Secret":                  SecretAnalyzer{},
 }
 
 func ListFilters() ([]string, []string, []string) {
