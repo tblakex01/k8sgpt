@@ -62,6 +62,8 @@ type PreAnalysis struct {
 	Node                     v1.Node
 	ValidatingWebhook        regv1.ValidatingWebhookConfiguration
 	MutatingWebhook          regv1.MutatingWebhookConfiguration
+	DaemonSet                appsv1.DaemonSet
+	Secret                   v1.Secret
 	GatewayClass             gtwapi.GatewayClass
 	Gateway                  gtwapi.Gateway
 	HTTPRoute                gtwapi.HTTPRoute
