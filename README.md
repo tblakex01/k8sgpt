@@ -37,6 +37,7 @@ _Out of the box integration with OpenAI, Azure, Cohere, Amazon Bedrock, Google G
 - [Analyzers](#analyzers)
 - [Examples](#examples)
 - [LLM AI Backends](#llm-ai-backends)
+- [Severity & Remediation](#severity--remediation)
 - [Key Features](#key-features)
 - [Model Context Protocol (MCP)](#model-context-protocol-mcp)
 - [Documentation](#documentation)
@@ -260,12 +261,14 @@ you will be able to write your own analyzers.
 - [x] jobAnalyzer
 - [x] cronJobAnalyzer
 - [x] nodeAnalyzer
+- [x] daemonSetAnalyzer
 - [x] mutatingWebhookAnalyzer
 - [x] validatingWebhookAnalyzer
 - [x] configMapAnalyzer
 
 #### Optional
 
+- [x] secretAnalyzer
 - [x] hpaAnalyzer
 - [x] pdbAnalyzer
 - [x] networkPolicyAnalyzer
@@ -317,6 +320,24 @@ _Anonymize during explain_
 
 ```
 k8sgpt analyze --explain --filter=Service --output=json --anonymize
+```
+
+_Filter by severity threshold_
+
+```
+k8sgpt analyze --explain --severity-threshold=high
+```
+
+_Preview remediation steps (dry run)_
+
+```
+k8sgpt analyze --remediate --dry-run
+```
+
+_Run automated remediation interactively_
+
+```
+k8sgpt analyze --remediate
 ```
 
 <details>
@@ -516,6 +537,50 @@ k8sgpt auth add --backend amazonbedrock --providerRegion us-east-1 --model arn:a
 
 ```
 
+## Severity & Remediation
+
+K8sGPT analyzers classify failures by severity and provide actionable remediation guidance.
+
+### Severity Levels
+
+Each failure is assigned a severity level to help prioritize issues:
+
+| Level | Description |
+|-------|-------------|
+| `critical` | Immediate action required (e.g., expired TLS certificates, crash loops) |
+| `high` | Significant issue affecting availability (e.g., unavailable pods, scheduling gaps) |
+| `medium` | Potential problem worth investigating (e.g., API access errors) |
+| `low` | Informational warning (e.g., misscheduled pods, non-critical events) |
+
+Use `--severity-threshold` to filter results:
+
+```
+# Show only high and critical issues
+k8sgpt analyze --severity-threshold=high
+
+# Show everything except informational
+k8sgpt analyze --severity-threshold=medium
+```
+
+Failures from analyzers that have not yet adopted severity levels are always included regardless of threshold.
+
+### Remediation
+
+Analyzers provide two types of remediation guidance:
+
+- **Investigation steps** - A sequence of kubectl commands and instructions to diagnose the issue
+- **Command remediation** - Executable kubectl commands that can fix the issue directly
+
+```
+# Preview what remediation would do (safe, no changes made)
+k8sgpt analyze --remediate --dry-run
+
+# Run remediation interactively (requires a TTY, prompts before executing)
+k8sgpt analyze --remediate
+```
+
+Remediation commands are restricted to `kubectl` only and require an interactive terminal for safety. Use `--dry-run` in CI pipelines to see what would be executed without making changes.
+
 ## Key Features
 
 <details>
@@ -565,6 +630,10 @@ _In a few analysers like Pod, we feed to the AI backend the event messages which
   - HPA
   - Deployment
   - Cronjob
+  - DaemonSet
+  - Secret
+
+- Anonymization also covers **remediation fields** (Steps, Command, and Description) when `--anonymize` is used, ensuring real resource names are not leaked in remediation output.
 
 - The following is the list of analysers in which data is **not being masked**:-
 
