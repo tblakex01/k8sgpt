@@ -17,13 +17,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
+	"time"
 
 	schemav1 "buf.build/gen/go/k8sgpt-ai/k8sgpt/protocolbuffers/go/schema/v1"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/analysis"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/server/config"
+	"github.com/k8sgpt-ai/k8sgpt/pkg/store"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/spf13/viper"
@@ -344,6 +348,27 @@ func (s *K8sGptMCPServer) registerToolsAndResources() error {
 		),
 	)
 	s.server.AddTool(healthScoreTool, s.handleHealthScore)
+
+	historyTool := mcp.NewTool("analysis-history",
+		mcp.WithDescription("Query analysis result history: list runs, diff between runs, or view trends"),
+		mcp.WithString("action",
+			mcp.Required(),
+			mcp.Description("Action: list, diff, or trend"),
+		),
+		mcp.WithString("runId1",
+			mcp.Description("First run ID for diff action"),
+		),
+		mcp.WithString("runId2",
+			mcp.Description("Second run ID for diff action"),
+		),
+		mcp.WithString("since",
+			mcp.Description("Duration for list/trend (e.g. 168h for 7 days)"),
+		),
+		mcp.WithNumber("limit",
+			mcp.Description("Max results for list action (default 20)"),
+		),
+	)
+	s.server.AddTool(historyTool, s.handleAnalysisHistory)
 
 	return nil
 }
@@ -775,6 +800,73 @@ func (s *K8sGptMCPServer) getHealthScoreResource(ctx context.Context, request mc
 			Text:     string(data),
 		},
 	}, nil
+}
+
+// handleAnalysisHistory handles the analysis-history tool
+func (s *K8sGptMCPServer) handleAnalysisHistory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+	action, _ := args["action"].(string)
+
+	storePath := viper.GetString("store.path")
+	if storePath == "" {
+		homeDir, _ := os.UserHomeDir()
+		storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
+	}
+
+	resultStore, err := store.NewSQLiteStore(storePath)
+	if err != nil {
+		return mcp.NewToolResultErrorf("Failed to open store: %v", err), nil
+	}
+	defer resultStore.Close()
+
+	switch action {
+	case "list":
+		opts := store.ListOpts{Limit: 20}
+		if limitVal, ok := args["limit"].(float64); ok {
+			opts.Limit = int(limitVal)
+		}
+		if sinceStr, ok := args["since"].(string); ok && sinceStr != "" {
+			if d, err := time.ParseDuration(sinceStr); err == nil {
+				opts.Since = time.Now().Add(-d)
+			}
+		}
+		runs, err := resultStore.ListRuns(opts)
+		if err != nil {
+			return mcp.NewToolResultErrorf("Failed to list runs: %v", err), nil
+		}
+		data, _ := json.MarshalIndent(runs, "", "  ")
+		return mcp.NewToolResultText(string(data)), nil
+
+	case "diff":
+		runID1, _ := args["runId1"].(string)
+		runID2, _ := args["runId2"].(string)
+		if runID1 == "" || runID2 == "" {
+			return mcp.NewToolResultErrorf("Both runId1 and runId2 are required for diff"), nil
+		}
+		diff, err := resultStore.Diff(runID1, runID2)
+		if err != nil {
+			return mcp.NewToolResultErrorf("Failed to diff: %v", err), nil
+		}
+		data, _ := json.MarshalIndent(diff, "", "  ")
+		return mcp.NewToolResultText(string(data)), nil
+
+	case "trend":
+		opts := store.TrendOpts{}
+		if sinceStr, ok := args["since"].(string); ok && sinceStr != "" {
+			if d, err := time.ParseDuration(sinceStr); err == nil {
+				opts.Since = time.Now().Add(-d)
+			}
+		}
+		trend, err := resultStore.Trend(opts)
+		if err != nil {
+			return mcp.NewToolResultErrorf("Failed to get trend: %v", err), nil
+		}
+		data, _ := json.MarshalIndent(trend, "", "  ")
+		return mcp.NewToolResultText(string(data)), nil
+
+	default:
+		return mcp.NewToolResultErrorf("Unknown action %q. Use: list, diff, trend", action), nil
+	}
 }
 
 // Close closes the MCP server and releases resources
