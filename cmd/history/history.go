@@ -17,22 +17,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/store"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 func getStore() (*store.SQLiteStore, error) {
-	storePath := viper.GetString("store.path")
-	if storePath == "" {
-		homeDir, _ := os.UserHomeDir()
-		storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
-	}
-	return store.NewSQLiteStore(storePath)
+	return store.GetDefaultStore()
 }
 
 // HistoryCmd is the parent command for history subcommands.

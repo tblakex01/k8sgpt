@@ -87,29 +87,29 @@ func (e *Engine) Evaluate(results []common.Result, namespace string) []EvaluateR
 
 			// Global dry-run override.
 			effectiveAction := policy.Action
-			if e.PolicyMode == "dry-run" {
-				effectiveAction = "dry-run"
+			if e.PolicyMode == ActionDryRun {
+				effectiveAction = ActionDryRun
 			}
 
 			switch effectiveAction {
-			case "log-only":
-				er.Outcome = "logged"
+			case ActionLogOnly:
+				er.Outcome = OutcomeLogged
 
-			case "dry-run":
-				er.Outcome = "dry-run"
+			case ActionDryRun:
+				er.Outcome = OutcomeDryRun
 
-			case "interactive":
+			case ActionInteractive:
 				outcome, errStr := e.executeInteractive(failure.Remediation)
 				er.Outcome = outcome
 				er.Error = errStr
 
-			case "auto":
+			case ActionAuto:
 				outcome, errStr := e.executeAuto(policy, er.Kind, er.Resource, failure.Remediation)
 				er.Outcome = outcome
 				er.Error = errStr
 
 			default:
-				er.Outcome = "logged"
+				er.Outcome = OutcomeLogged
 			}
 
 			e.writeAudit(er)
@@ -124,10 +124,10 @@ func (e *Engine) Evaluate(results []common.Result, namespace string) []EvaluateR
 // max-retries constraints.
 func (e *Engine) executeAuto(policy *Policy, kind, resource string, rem *common.Remediation) (outcome, errStr string) {
 	if rem == nil || rem.Type != common.RemediationTypeCommand {
-		return "logged", ""
+		return OutcomeLogged, ""
 	}
 	if len(rem.CommandArgs) == 0 || rem.CommandArgs[0] != "kubectl" {
-		return "logged", "auto execution only allowed for kubectl commands"
+		return OutcomeLogged, "auto execution only allowed for kubectl commands"
 	}
 
 	// Check cooldown.
@@ -139,7 +139,7 @@ func (e *Engine) executeAuto(policy *Policy, kind, resource string, rem *common.
 			policy.Name, kind, resource, cutoff,
 		).Scan(&count)
 		if err == nil && count > 0 {
-			return "skipped-cooldown", ""
+			return OutcomeSkippedCooldown, ""
 		}
 	}
 
@@ -151,7 +151,7 @@ func (e *Engine) executeAuto(policy *Policy, kind, resource string, rem *common.
 			policy.Name, kind, resource,
 		).Scan(&count)
 		if err == nil && count >= policy.MaxRetries {
-			return "skipped-max-retries", ""
+			return OutcomeSkippedMaxRetries, ""
 		}
 	}
 
@@ -160,18 +160,18 @@ func (e *Engine) executeAuto(policy *Policy, kind, resource string, rem *common.
 	cmd := exec.Command(args[0], args[1:]...) // #nosec G204
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "executed", fmt.Sprintf("command error: %s; output: %s", err.Error(), strings.TrimSpace(string(out)))
+		return OutcomeExecuted, fmt.Sprintf("command error: %s; output: %s", err.Error(), strings.TrimSpace(string(out)))
 	}
-	return "executed", ""
+	return OutcomeExecuted, ""
 }
 
 // executeInteractive prompts the user to approve the command before executing it.
 func (e *Engine) executeInteractive(rem *common.Remediation) (outcome, errStr string) {
 	if rem == nil || rem.Type != common.RemediationTypeCommand {
-		return "logged", ""
+		return OutcomeLogged, ""
 	}
 	if len(rem.CommandArgs) == 0 {
-		return "logged", "no command args provided"
+		return OutcomeLogged, "no command args provided"
 	}
 
 	cmdStr := strings.Join(rem.CommandArgs, " ")
@@ -189,9 +189,9 @@ func (e *Engine) executeInteractive(rem *common.Remediation) (outcome, errStr st
 	cmd := exec.Command(args[0], args[1:]...) // #nosec G204
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "executed", fmt.Sprintf("command error: %s; output: %s", err.Error(), strings.TrimSpace(string(out)))
+		return OutcomeExecuted, fmt.Sprintf("command error: %s; output: %s", err.Error(), strings.TrimSpace(string(out)))
 	}
-	return "executed", ""
+	return OutcomeExecuted, ""
 }
 
 // writeAudit inserts an audit record for the evaluated result if a DB is configured.

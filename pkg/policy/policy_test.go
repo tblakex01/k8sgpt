@@ -60,7 +60,7 @@ func TestMatchHasRemediation(t *testing.T) {
 
 func TestMatchANDLogic(t *testing.T) {
 	p := Policy{
-		Name: "test",
+		Name:  "test",
 		Match: Match{Kind: "Pod", Severity: []string{"critical"}, TextPattern: "CrashLoop"},
 	}
 	assert.True(t, p.Matches("Pod", "", common.SeverityCritical, "CrashLoopBackOff", true))
@@ -71,8 +71,8 @@ func TestMatchANDLogic(t *testing.T) {
 
 func TestFirstMatchWins(t *testing.T) {
 	policies := []Policy{
-		{Name: "first", Match: Match{Kind: "Pod"}, Action: "auto"},
-		{Name: "second", Match: Match{Kind: "Pod"}, Action: "log-only"},
+		{Name: "first", Match: Match{Kind: "Pod"}, Action: ActionAuto},
+		{Name: "second", Match: Match{Kind: "Pod"}, Action: ActionLogOnly},
 	}
 	match := FindFirstMatch(policies, "Pod", "", common.SeverityHigh, "error", true)
 	assert.NotNil(t, match)
@@ -86,13 +86,13 @@ func TestNoMatch(t *testing.T) {
 }
 
 func TestAutoRequiresRemediation(t *testing.T) {
-	p := Policy{Name: "test", Match: Match{Kind: "Pod"}, Action: "auto"}
+	p := Policy{Name: "test", Match: Match{Kind: "Pod"}, Action: ActionAuto}
 	assert.True(t, p.IsEligibleForExecution(true))
 	assert.False(t, p.IsEligibleForExecution(false))
 }
 
 func TestLogOnlyNoRemediationRequired(t *testing.T) {
-	p := Policy{Name: "test", Match: Match{Kind: "Pod"}, Action: "log-only"}
+	p := Policy{Name: "test", Match: Match{Kind: "Pod"}, Action: ActionLogOnly}
 	assert.True(t, p.IsEligibleForExecution(false))
 	assert.True(t, p.IsEligibleForExecution(true))
 }

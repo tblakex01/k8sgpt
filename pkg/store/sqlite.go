@@ -26,6 +26,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/score"
 	"github.com/oklog/ulid/v2"
+	"github.com/spf13/viper"
 	_ "modernc.org/sqlite"
 )
 
@@ -68,6 +69,16 @@ func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
 		return nil, fmt.Errorf("store: migrate: %w", err)
 	}
 	return st, nil
+}
+
+// GetDefaultStore creates a SQLiteStore using the configured path or default.
+func GetDefaultStore() (*SQLiteStore, error) {
+	storePath := viper.GetString("store.path")
+	if storePath == "" {
+		homeDir, _ := os.UserHomeDir()
+		storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
+	}
+	return NewSQLiteStore(storePath)
 }
 
 // migrate creates the schema if it does not already exist.
@@ -361,6 +372,7 @@ func (s *SQLiteStore) Trend(opts TrendOpts) (*TrendResult, error) {
 		Cluster: opts.Cluster,
 		Since:   opts.Since,
 		Until:   opts.Until,
+		Limit:   1000, // Reasonable cap for trend analysis
 	}
 
 	summaries, err := s.ListRuns(listOpts)

@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -33,19 +32,19 @@ import (
 )
 
 var (
-	explain         bool
-	backend         string
-	output          string
-	filters         []string
-	language        string
-	nocache         bool
-	namespace       string
-	labelSelector   string
-	anonymize       bool
-	maxConcurrency  int
-	withDoc         bool
-	interactiveMode bool
-	customAnalysis  bool
+	explain           bool
+	backend           string
+	output            string
+	filters           []string
+	language          string
+	nocache           bool
+	namespace         string
+	labelSelector     string
+	anonymize         bool
+	maxConcurrency    int
+	withDoc           bool
+	interactiveMode   bool
+	customAnalysis    bool
 	customHeaders     []string
 	withStats         bool
 	severityThreshold string
@@ -109,13 +108,8 @@ var AnalyzeCmd = &cobra.Command{
 		}
 		config.SeverityThreshold = severityThreshold
 
-		storePath := viper.GetString("store.path")
-		if storePath == "" {
-			homeDir, _ := os.UserHomeDir()
-			storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
-		}
 		if !noStore {
-			resultStore, storeErr := store.NewSQLiteStore(storePath)
+			resultStore, storeErr := store.GetDefaultStore()
 			if storeErr != nil {
 				color.Yellow("Warning: could not initialize store: %v", storeErr)
 			} else {

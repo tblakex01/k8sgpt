@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -26,7 +25,6 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/policy"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/store"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // PolicyCmd is the parent command for policy subcommands.
@@ -56,12 +54,7 @@ var (
 )
 
 func getStore() (*store.SQLiteStore, error) {
-	storePath := viper.GetString("store.path")
-	if storePath == "" {
-		homeDir, _ := os.UserHomeDir()
-		storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
-	}
-	return store.NewSQLiteStore(storePath)
+	return store.GetDefaultStore()
 }
 
 var listCmd = &cobra.Command{

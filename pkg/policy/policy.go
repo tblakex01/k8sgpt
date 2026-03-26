@@ -21,12 +21,30 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Action constants for remediation policies.
+const (
+	ActionAuto        = "auto"
+	ActionDryRun      = "dry-run"
+	ActionLogOnly     = "log-only"
+	ActionInteractive = "interactive"
+)
+
+// Outcome constants for policy evaluation results.
+const (
+	OutcomeExecuted          = "executed"
+	OutcomeDryRun            = "dry-run"
+	OutcomeLogged            = "logged"
+	OutcomeSkippedCooldown   = "skipped-cooldown"
+	OutcomeSkippedMaxRetries = "skipped-max-retries"
+)
+
 type Policy struct {
-	Name       string        `json:"name" mapstructure:"name"`
-	Match      Match         `json:"match" mapstructure:"match"`
-	Action     string        `json:"action" mapstructure:"action"`
-	Cooldown   time.Duration `json:"cooldown" mapstructure:"cooldown"`
-	MaxRetries int           `json:"maxRetries" mapstructure:"maxRetries"`
+	Name            string         `json:"name" mapstructure:"name"`
+	Match           Match          `json:"match" mapstructure:"match"`
+	Action          string         `json:"action" mapstructure:"action"`
+	Cooldown        time.Duration  `json:"cooldown" mapstructure:"cooldown"`
+	MaxRetries      int            `json:"maxRetries" mapstructure:"maxRetries"`
+	compiledPattern *regexp.Regexp // cached compiled regex, unexported
 }
 
 type Match struct {
@@ -43,10 +61,13 @@ func LoadPolicies() []Policy {
 	_ = viper.UnmarshalKey("remediationPolicies", &policies)
 	for i := range policies {
 		if policies[i].Action == "" {
-			policies[i].Action = "dry-run"
+			policies[i].Action = ActionDryRun
 		}
 		if policies[i].MaxRetries == 0 {
 			policies[i].MaxRetries = 3
+		}
+		if policies[i].Match.TextPattern != "" {
+			policies[i].compiledPattern, _ = regexp.Compile(policies[i].Match.TextPattern)
 		}
 	}
 	return policies
@@ -81,9 +102,15 @@ func (p *Policy) Matches(kind, namespace string, severity common.Severity, text 
 		}
 	}
 	if p.Match.TextPattern != "" {
-		matched, err := regexp.MatchString(p.Match.TextPattern, text)
-		if err != nil || !matched {
-			return false
+		if p.compiledPattern != nil {
+			if !p.compiledPattern.MatchString(text) {
+				return false
+			}
+		} else {
+			matched, err := regexp.MatchString(p.Match.TextPattern, text)
+			if err != nil || !matched {
+				return false
+			}
 		}
 	}
 	if p.Match.Namespace != "" && p.Match.Namespace != namespace {
@@ -96,7 +123,7 @@ func (p *Policy) Matches(kind, namespace string, severity common.Severity, text 
 }
 
 func (p *Policy) IsEligibleForExecution(hasRemediation bool) bool {
-	if p.Action == "log-only" {
+	if p.Action == ActionLogOnly {
 		return true
 	}
 	return hasRemediation

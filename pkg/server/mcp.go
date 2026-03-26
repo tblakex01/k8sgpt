@@ -17,8 +17,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"time"
 
@@ -834,13 +832,7 @@ func (s *K8sGptMCPServer) handleAnalysisHistory(ctx context.Context, request mcp
 	args := request.GetArguments()
 	action, _ := args["action"].(string)
 
-	storePath := viper.GetString("store.path")
-	if storePath == "" {
-		homeDir, _ := os.UserHomeDir()
-		storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
-	}
-
-	resultStore, err := store.NewSQLiteStore(storePath)
+	resultStore, err := store.GetDefaultStore()
 	if err != nil {
 		return mcp.NewToolResultErrorf("Failed to open store: %v", err), nil
 	}
@@ -940,13 +932,7 @@ func (s *K8sGptMCPServer) handleRemediationPolicies(ctx context.Context, request
 func (s *K8sGptMCPServer) handlePolicyAudit(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	args := request.GetArguments()
 
-	storePath := viper.GetString("store.path")
-	if storePath == "" {
-		homeDir, _ := os.UserHomeDir()
-		storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
-	}
-
-	resultStore, err := store.NewSQLiteStore(storePath)
+	resultStore, err := store.GetDefaultStore()
 	if err != nil {
 		return mcp.NewToolResultErrorf("Failed to open store: %v", err), nil
 	}
