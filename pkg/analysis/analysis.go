@@ -33,6 +33,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/custom"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
+	"github.com/k8sgpt-ai/k8sgpt/pkg/score"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/util"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/viper"
@@ -57,6 +58,7 @@ type Analysis struct {
 	WithStats          bool
 	Stats              []common.AnalysisStats
 	SeverityThreshold  string
+	Score              *score.HealthScore
 }
 
 type (
@@ -76,6 +78,7 @@ type JsonOutput struct {
 	Problems int                    `json:"problems"`
 	Results  []common.Result        `json:"results"`
 	Summary  FailureSeveritySummary `json:"summary"`
+	Score    *score.HealthScore     `json:"score,omitempty"`
 }
 
 func NewAnalysis(
@@ -101,7 +104,7 @@ func NewAnalysis(
 		fmt.Println("Debug: Checking kubernetes client initialization.")
 	}
 	if err != nil {
-		return nil, fmt.Errorf("initialising kubernetes client: %w", err)
+		return nil, fmt.Errorf("initializing kubernetes client: %w", err)
 	}
 	if verbose {
 		fmt.Printf("Debug: Kubernetes client initialized, server=%s.\n", client.Config.Host)
@@ -608,6 +611,12 @@ func (a *Analysis) SortBySeverity() {
 	sort.Slice(a.Results, func(i, j int) bool {
 		return maxSeverity(a.Results[i].Error) > maxSeverity(a.Results[j].Error)
 	})
+}
+
+func (a *Analysis) ComputeScore() {
+	cfg := score.ConfigFromViper()
+	hs := score.Compute(a.Results, cfg)
+	a.Score = &hs
 }
 
 func maxSeverity(failures []common.Failure) int {

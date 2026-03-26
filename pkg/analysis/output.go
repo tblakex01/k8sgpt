@@ -72,10 +72,11 @@ func (a *Analysis) jsonOutput() ([]byte, error) {
 		Errors:   a.Errors,
 		Status:   status,
 		Summary:  summary,
+		Score:    a.Score,
 	}
 	output, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling json: %v", err)
+		return nil, fmt.Errorf("error marshaling json: %v", err)
 	}
 	return output, nil
 }
@@ -86,7 +87,7 @@ func (a *Analysis) PrintStats() []byte {
 	output.WriteString(color.YellowString("The stats mode allows for debugging and understanding the time taken by an analysis by displaying the statistics of each analyzer.\n"))
 
 	for _, stat := range a.Stats {
-		output.WriteString(fmt.Sprintf("- Analyzer %s took %s \n", color.YellowString(stat.Analyzer), stat.DurationTime))
+		fmt.Fprintf(&output, "- Analyzer %s took %s \n", color.YellowString(stat.Analyzer), stat.DurationTime)
 	}
 
 	return []byte(output.String())
@@ -97,16 +98,20 @@ func (a *Analysis) textOutput() ([]byte, error) {
 
 	// Print the AI provider used for this analysis (if explain was enabled).
 	if a.Explain {
-		output.WriteString(fmt.Sprintf("AI Provider: %s\n", color.YellowString(a.AnalysisAIProvider)))
+		fmt.Fprintf(&output, "AI Provider: %s\n", color.YellowString(a.AnalysisAIProvider))
 	} else {
-		output.WriteString(fmt.Sprintf("AI Provider: %s\n", color.YellowString("AI not used; --explain not set")))
+		fmt.Fprintf(&output, "AI Provider: %s\n", color.YellowString("AI not used; --explain not set"))
+	}
+	if a.Score != nil {
+		fmt.Fprintf(&output, "Health Score: %s (%d/100)\n",
+			color.HiWhiteString(a.Score.Grade), a.Score.Score)
 	}
 
 	if len(a.Errors) != 0 {
 		output.WriteString("\n")
 		output.WriteString(color.YellowString("Warnings : \n"))
 		for _, aerror := range a.Errors {
-			output.WriteString(fmt.Sprintf("- %s\n", color.YellowString(aerror)))
+			fmt.Fprintf(&output, "- %s\n", color.YellowString(aerror))
 		}
 	}
 	output.WriteString("\n")
@@ -115,10 +120,10 @@ func (a *Analysis) textOutput() ([]byte, error) {
 		return []byte(output.String()), nil
 	}
 	for n, result := range a.Results {
-		output.WriteString(fmt.Sprintf("%s: %s %s(%s)\n", color.CyanString("%d", n),
+		fmt.Fprintf(&output, "%s: %s %s(%s)\n", color.CyanString("%d", n),
 			color.HiYellowString(result.Kind),
 			color.YellowString(result.Name),
-			color.CyanString(result.ParentObject)))
+			color.CyanString(result.ParentObject))
 		for _, err := range result.Error {
 			severityTag := severityTagString(err.Severity)
 			if severityTag != "" {
@@ -127,7 +132,7 @@ func (a *Analysis) textOutput() ([]byte, error) {
 				fmt.Fprintf(&output, "- %s %s\n", color.RedString("Error:"), color.RedString(err.Text))
 			}
 			if err.KubernetesDoc != "" {
-				output.WriteString(fmt.Sprintf("  %s %s\n", color.RedString("Kubernetes Doc:"), color.RedString(err.KubernetesDoc)))
+				fmt.Fprintf(&output, "  %s %s\n", color.RedString("Kubernetes Doc:"), color.RedString(err.KubernetesDoc))
 			}
 			if err.Remediation != nil {
 				switch err.Remediation.Type {
