@@ -14,6 +14,7 @@ limitations under the License.
 package analyze
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"os/signal"
@@ -25,6 +26,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai/interactive"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/analysis"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
+	"github.com/k8sgpt-ai/k8sgpt/pkg/policy"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/store"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -50,6 +52,7 @@ var (
 	remediate         bool
 	dryRun            bool
 	noStore           bool
+	policyMode        string
 )
 
 // AnalyzeCmd represents the problems command
@@ -182,9 +185,29 @@ var AnalyzeCmd = &cobra.Command{
 		fmt.Println(string(output_data))
 
 		if remediate {
-			if err := config.RunRemediation(dryRun); err != nil {
-				color.Red("Error during remediation: %v", err)
-				os.Exit(1)
+			policies := policy.LoadPolicies()
+			if len(policies) > 0 {
+				var db *sql.DB
+				if config.Store != nil {
+					if sqlStore, ok := config.Store.(*store.SQLiteStore); ok {
+						db = sqlStore.DB()
+					}
+				}
+				engine := &policy.Engine{
+					Policies:   policies,
+					DB:         db,
+					PolicyMode: policyMode,
+				}
+				outcomes := engine.Evaluate(config.Results, namespace)
+				if verbose {
+					fmt.Printf("Debug: Policy engine evaluated %d outcomes.\n", len(outcomes))
+				}
+			} else {
+				// Fallback to legacy interactive remediation
+				if err := config.RunRemediation(dryRun); err != nil {
+					color.Red("Error during remediation: %v", err)
+					os.Exit(1)
+				}
 			}
 		}
 
@@ -254,4 +277,6 @@ func init() {
 	AnalyzeCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview remediations without applying (requires --remediate)")
 	// no-store flag
 	AnalyzeCmd.Flags().BoolVar(&noStore, "no-store", false, "Do not save results to history store")
+	// policy-mode flag
+	AnalyzeCmd.Flags().StringVar(&policyMode, "policy-mode", "", "Override all policy actions to this mode (e.g. dry-run)")
 }
