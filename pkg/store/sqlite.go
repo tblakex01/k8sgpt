@@ -111,11 +111,18 @@ CREATE TABLE IF NOT EXISTS failures (
 CREATE INDEX IF NOT EXISTS idx_failures_result_id ON failures(result_id);
 
 CREATE TABLE IF NOT EXISTS policy_audit (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    id          TEXT PRIMARY KEY,
     run_id      TEXT NOT NULL,
     policy_name TEXT NOT NULL,
-    result      TEXT NOT NULL,
-    evaluated_at TEXT NOT NULL
+    kind        TEXT NOT NULL DEFAULT '',
+    resource    TEXT NOT NULL DEFAULT '',
+    namespace   TEXT NOT NULL DEFAULT '',
+    severity    TEXT NOT NULL DEFAULT '',
+    action      TEXT NOT NULL DEFAULT '',
+    command     TEXT NOT NULL DEFAULT '',
+    outcome     TEXT NOT NULL DEFAULT '',
+    error       TEXT NOT NULL DEFAULT '',
+    created_at  TEXT NOT NULL
 );
 `
 	_, err := s.db.Exec(schema)
