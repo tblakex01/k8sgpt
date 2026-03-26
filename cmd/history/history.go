@@ -70,7 +70,7 @@ var listCmd = &cobra.Command{
 			color.Red("Error: %v", err)
 			os.Exit(1)
 		}
-		defer s.Close()
+		defer s.Close() //nolint:errcheck
 
 		opts := store.ListOpts{Limit: listLimit}
 		if listSince != "" {
@@ -118,7 +118,7 @@ var diffCmd = &cobra.Command{
 			color.Red("Error: %v", err)
 			os.Exit(1)
 		}
-		defer s.Close()
+		defer s.Close() //nolint:errcheck
 
 		var runID1, runID2 string
 		if diffLastN > 0 {
@@ -179,7 +179,7 @@ var trendCmd = &cobra.Command{
 			color.Red("Error: %v", err)
 			os.Exit(1)
 		}
-		defer s.Close()
+		defer s.Close() //nolint:errcheck
 
 		opts := store.TrendOpts{}
 		if trendSince != "" {
@@ -240,7 +240,7 @@ var pruneCmd = &cobra.Command{
 			color.Red("Error: %v", err)
 			os.Exit(1)
 		}
-		defer s.Close()
+		defer s.Close() //nolint:errcheck
 
 		if olderThan == "" {
 			color.Red("Error: --older-than is required")

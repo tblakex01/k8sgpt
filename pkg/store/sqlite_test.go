@@ -57,7 +57,7 @@ func TestNewSQLiteStore_CreatesFile(t *testing.T) {
 
 	store, err := NewSQLiteStore(dbPath)
 	require.NoError(t, err)
-	defer store.Close()
+	defer store.Close() //nolint:errcheck
 
 	// Verify we can ping the DB
 	err = store.DB().Ping()
@@ -68,7 +68,7 @@ func TestSaveAndGetRun(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	run := makeRun("prod", []string{"CrashLoopBackOff", "OOMKilled"})
 	run.CreatedAt = time.Now().UTC().Truncate(time.Second)
@@ -104,7 +104,7 @@ func TestListRuns(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	// Create 5 runs with slight time differences
 	base := time.Now().UTC().Add(-5 * time.Minute)
@@ -131,7 +131,7 @@ func TestListRunsWithTimeFilter(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	// Old run: 48 hours ago
 	oldRun := makeRun("cluster1", []string{"old error"})
@@ -156,7 +156,7 @@ func TestDiff(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	// run1 has {crash, warning}
 	run1 := &RunRecord{
@@ -209,7 +209,7 @@ func TestTrend(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	// 3 runs each with the same failure
 	base := time.Now().UTC().Add(-3 * time.Hour)
@@ -248,7 +248,7 @@ func TestGetRunNotFound(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	_, err = st.GetRun("01NONEXISTENT000000000000")
 	require.Error(t, err)
@@ -258,7 +258,7 @@ func TestListRunsClusterFilter(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	run1 := makeRun("cluster-a", []string{"err1"})
 	run2 := makeRun("cluster-b", []string{"err2"})
@@ -275,7 +275,7 @@ func TestListRunsUntilFilter(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	recent := makeRun("cluster1", []string{"new error"})
 	recent.CreatedAt = time.Now().UTC().Add(-1 * time.Hour)
@@ -296,7 +296,7 @@ func TestSaveRunWithRemediation(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	run := &RunRecord{
 		Cluster:   "prod",
@@ -344,7 +344,7 @@ func TestTrendWithSingleRun(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	run := makeRun("cluster1", []string{"some error"})
 	run.CreatedAt = time.Now().UTC().Add(-1 * time.Hour)
@@ -365,7 +365,7 @@ func TestTrendEmpty(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	trend, err := st.Trend(TrendOpts{
 		Cluster: "no-such-cluster",
@@ -382,7 +382,7 @@ func TestPrune(t *testing.T) {
 	dir := t.TempDir()
 	st, err := NewSQLiteStore(filepath.Join(dir, "test.db"))
 	require.NoError(t, err)
-	defer st.Close()
+	defer st.Close() //nolint:errcheck
 
 	// Old run: 72 hours ago
 	oldRun := makeRun("cluster1", []string{"old error"})

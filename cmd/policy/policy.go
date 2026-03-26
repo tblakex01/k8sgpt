@@ -183,7 +183,7 @@ var auditCmd = &cobra.Command{
 			color.Red("Error opening store: %v", err)
 			os.Exit(1)
 		}
-		defer s.Close()
+		defer s.Close() //nolint:errcheck
 
 		opts := policy.AuditOpts{
 			PolicyName: auditPolicy,

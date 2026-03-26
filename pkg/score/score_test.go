@@ -131,7 +131,7 @@ func TestCompute_ResourceMultipliers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.kind, func(t *testing.T) {
 			m := cfg.ResourceMultiplier(tt.kind)
-			assert.Equal(t, tt.expectedMultiplier, m)
+			assert.InDelta(t, tt.expectedMultiplier, m, 1e-9)
 		})
 	}
 }
@@ -150,7 +150,7 @@ func TestCompute_TopContributors(t *testing.T) {
 	}
 	cfg := DefaultConfig()
 	hs := Compute(results, cfg)
-	assert.Equal(t, 3, len(hs.TopContributors))
+	assert.Len(t, hs.TopContributors, 3)
 	assert.Equal(t, "Node", hs.TopContributors[0].Kind)
 	assert.Equal(t, "Deployment", hs.TopContributors[1].Kind)
 	assert.Equal(t, "Pod", hs.TopContributors[2].Kind)
@@ -160,10 +160,10 @@ func TestConfigFromViper_Defaults(t *testing.T) {
 	// With no viper values set, ConfigFromViper should return the same weights as DefaultConfig
 	cfg := ConfigFromViper()
 	defaults := DefaultConfig()
-	assert.Equal(t, defaults.SeverityWeights[common.SeverityCritical], cfg.SeverityWeights[common.SeverityCritical])
-	assert.Equal(t, defaults.SeverityWeights[common.SeverityHigh], cfg.SeverityWeights[common.SeverityHigh])
-	assert.Equal(t, defaults.SeverityWeights[common.SeverityMedium], cfg.SeverityWeights[common.SeverityMedium])
-	assert.Equal(t, defaults.SeverityWeights[common.SeverityLow], cfg.SeverityWeights[common.SeverityLow])
+	assert.InDelta(t, defaults.SeverityWeights[common.SeverityCritical], cfg.SeverityWeights[common.SeverityCritical], 1e-9)
+	assert.InDelta(t, defaults.SeverityWeights[common.SeverityHigh], cfg.SeverityWeights[common.SeverityHigh], 1e-9)
+	assert.InDelta(t, defaults.SeverityWeights[common.SeverityMedium], cfg.SeverityWeights[common.SeverityMedium], 1e-9)
+	assert.InDelta(t, defaults.SeverityWeights[common.SeverityLow], cfg.SeverityWeights[common.SeverityLow], 1e-9)
 }
 
 func TestConfigFromViper_CustomWeights(t *testing.T) {
@@ -179,10 +179,10 @@ func TestConfigFromViper_CustomWeights(t *testing.T) {
 	}()
 
 	cfg := ConfigFromViper()
-	assert.Equal(t, 15.0, cfg.SeverityWeights[common.SeverityCritical])
-	assert.Equal(t, 8.0, cfg.SeverityWeights[common.SeverityHigh])
-	assert.Equal(t, 3.0, cfg.SeverityWeights[common.SeverityMedium])
-	assert.Equal(t, 2.0, cfg.SeverityWeights[common.SeverityLow])
+	assert.InDelta(t, 15.0, cfg.SeverityWeights[common.SeverityCritical], 1e-9)
+	assert.InDelta(t, 8.0, cfg.SeverityWeights[common.SeverityHigh], 1e-9)
+	assert.InDelta(t, 3.0, cfg.SeverityWeights[common.SeverityMedium], 1e-9)
+	assert.InDelta(t, 2.0, cfg.SeverityWeights[common.SeverityLow], 1e-9)
 }
 
 func TestCompute_MixedSeverities(t *testing.T) {

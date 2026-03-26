@@ -277,7 +277,7 @@ func (s *SQLiteStore) ListRuns(opts ListOpts) ([]RunSummary, error) {
 	if err != nil {
 		return nil, fmt.Errorf("store: list runs: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var summaries []RunSummary
 	for rows.Next() {
@@ -545,7 +545,7 @@ func (s *SQLiteStore) loadResults(runID string) ([]common.Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("store: load results: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var results []common.Result
 	for rows.Next() {
@@ -569,7 +569,7 @@ func (s *SQLiteStore) loadFailures(resultID int64) ([]common.Failure, error) {
 	if err != nil {
 		return nil, fmt.Errorf("store: load failures: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var failures []common.Failure
 	for rows.Next() {

@@ -67,7 +67,7 @@ func QueryAuditLog(db *sql.DB, opts AuditOpts) ([]AuditEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("querying audit log: %w", err)
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var entries []AuditEntry
 	for rows.Next() {
