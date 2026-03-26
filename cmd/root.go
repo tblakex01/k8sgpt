@@ -28,6 +28,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/cmd/generate"
 	"github.com/k8sgpt-ai/k8sgpt/cmd/history"
 	"github.com/k8sgpt-ai/k8sgpt/cmd/integration"
+	policyCmd "github.com/k8sgpt-ai/k8sgpt/cmd/policy"
 	"github.com/k8sgpt-ai/k8sgpt/cmd/score"
 	"github.com/k8sgpt-ai/k8sgpt/cmd/serve"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/util"
@@ -85,6 +86,7 @@ func init() {
 	rootCmd.AddCommand(cache.CacheCmd)
 	rootCmd.AddCommand(customanalyzer.CustomAnalyzerCmd)
 	rootCmd.AddCommand(history.HistoryCmd)
+	rootCmd.AddCommand(policyCmd.PolicyCmd)
 	rootCmd.AddCommand(score.ScoreCmd)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("Default config file (%s/k8sgpt/k8sgpt.yaml)", xdg.ConfigHome))
 	rootCmd.PersistentFlags().StringVar(&kubecontext, "kubecontext", "", "Kubernetes context to use. Only required if out-of-cluster.")
