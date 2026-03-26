@@ -34,6 +34,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/custom"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/score"
+	"github.com/k8sgpt-ai/k8sgpt/pkg/store"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/util"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/viper"
@@ -59,6 +60,8 @@ type Analysis struct {
 	Stats              []common.AnalysisStats
 	SeverityThreshold  string
 	Score              *score.HealthScore
+	Store              store.IStore
+	NoStore            bool
 }
 
 type (
@@ -617,6 +620,24 @@ func (a *Analysis) ComputeScore() {
 	cfg := score.ConfigFromViper()
 	hs := score.Compute(a.Results, cfg)
 	a.Score = &hs
+}
+
+func (a *Analysis) SaveToStore(cluster string) error {
+	if a.Store == nil || a.NoStore {
+		return nil
+	}
+	if a.Score == nil {
+		a.ComputeScore()
+	}
+	run := &store.RunRecord{
+		Cluster:   cluster,
+		Namespace: a.Namespace,
+		Score:     *a.Score,
+		Filters:   a.Filters,
+		Results:   a.Results,
+		CreatedAt: a.Score.ComputedAt,
+	}
+	return a.Store.Save(run)
 }
 
 func maxSeverity(failures []common.Failure) int {

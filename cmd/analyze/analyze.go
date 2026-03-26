@@ -17,12 +17,15 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai/interactive"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/analysis"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
+	"github.com/k8sgpt-ai/k8sgpt/pkg/store"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -46,6 +49,7 @@ var (
 	severityThreshold string
 	remediate         bool
 	dryRun            bool
+	noStore           bool
 )
 
 // AnalyzeCmd represents the problems command
@@ -102,6 +106,22 @@ var AnalyzeCmd = &cobra.Command{
 		}
 		config.SeverityThreshold = severityThreshold
 
+		storePath := viper.GetString("store.path")
+		if storePath == "" {
+			homeDir, _ := os.UserHomeDir()
+			storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
+		}
+		if !noStore {
+			resultStore, storeErr := store.NewSQLiteStore(storePath)
+			if storeErr != nil {
+				color.Yellow("Warning: could not initialize store: %v", storeErr)
+			} else {
+				config.Store = resultStore
+				defer resultStore.Close()
+			}
+		}
+		config.NoStore = noStore
+
 		if customAnalysis {
 			config.RunCustomAnalysis()
 			if verbose {
@@ -115,6 +135,23 @@ var AnalyzeCmd = &cobra.Command{
 
 		config.FilterBySeverity()
 		config.SortBySeverity()
+
+		config.ComputeScore()
+		kubecontext := viper.GetString("kubecontext")
+		if kubecontext == "" {
+			kubecontext = "default"
+		}
+		if err := config.SaveToStore(kubecontext); err != nil {
+			color.Yellow("Warning: failed to save results to store: %v", err)
+		}
+		if config.Store != nil {
+			retention := viper.GetString("store.retention")
+			if retention != "" {
+				if d, parseErr := time.ParseDuration(retention); parseErr == nil {
+					config.Store.Prune(d) //nolint:errcheck
+				}
+			}
+		}
 
 		if explain {
 			err := config.GetAIResults(output, anonymize)
@@ -215,4 +252,6 @@ func init() {
 	AnalyzeCmd.Flags().BoolVar(&remediate, "remediate", false, "Apply suggested remediations interactively")
 	// dry-run flag
 	AnalyzeCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview remediations without applying (requires --remediate)")
+	// no-store flag
+	AnalyzeCmd.Flags().BoolVar(&noStore, "no-store", false, "Do not save results to history store")
 }
