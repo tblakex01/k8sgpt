@@ -337,6 +337,14 @@ func (s *K8sGptMCPServer) registerToolsAndResources() error {
 	)
 	s.server.AddTool(listIntegrationsTool, s.handleListIntegrations)
 
+	healthScoreTool := mcp.NewTool("cluster-health-score",
+		mcp.WithDescription("Compute and return the cluster health score (0-100) with grade and top contributors"),
+		mcp.WithString("namespace",
+			mcp.Description("Namespace to analyze (empty for all)"),
+		),
+	)
+	s.server.AddTool(healthScoreTool, s.handleHealthScore)
+
 	return nil
 }
 
@@ -615,6 +623,12 @@ func (s *K8sGptMCPServer) registerResources() error {
 	)
 	s.server.AddResource(activeFiltersResource, s.getActiveFiltersResource)
 
+	healthScoreResource := mcp.NewResource("cluster-health-score", "cluster-health-score",
+		mcp.WithResourceDescription("Current cluster health score"),
+		mcp.WithMIMEType("application/json"),
+	)
+	s.server.AddResource(healthScoreResource, s.getHealthScoreResource)
+
 	return nil
 }
 
@@ -715,6 +729,48 @@ func (s *K8sGptMCPServer) getActiveFiltersResource(ctx context.Context, request 
 	return []mcp.ResourceContents{
 		&mcp.TextResourceContents{
 			URI:      "active-filters",
+			MIMEType: "application/json",
+			Text:     string(data),
+		},
+	}, nil
+}
+
+// handleHealthScore handles the cluster-health-score tool
+func (s *K8sGptMCPServer) handleHealthScore(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	var req struct {
+		Namespace string `json:"namespace,omitempty"`
+	}
+	_ = request.BindArguments(&req)
+	a, err := analysis.NewAnalysis("", "", nil, req.Namespace, "", true, false, 10, false, false, nil, false)
+	if err != nil {
+		return mcp.NewToolResultErrorf("Failed to create analysis: %v", err), nil
+	}
+	defer a.Close()
+	a.RunAnalysis()
+	a.ComputeScore()
+	if a.Score == nil {
+		return mcp.NewToolResultErrorf("Score computation failed"), nil
+	}
+	data, err := json.Marshal(a.Score)
+	if err != nil {
+		return mcp.NewToolResultErrorf("Failed to marshal score: %v", err), nil
+	}
+	return mcp.NewToolResultText(string(data)), nil
+}
+
+// getHealthScoreResource handles the cluster-health-score resource
+func (s *K8sGptMCPServer) getHealthScoreResource(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+	a, err := analysis.NewAnalysis("", "", nil, "", "", true, false, 10, false, false, nil, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create analysis: %v", err)
+	}
+	defer a.Close()
+	a.RunAnalysis()
+	a.ComputeScore()
+	data, _ := json.Marshal(a.Score)
+	return []mcp.ResourceContents{
+		&mcp.TextResourceContents{
+			URI:      "cluster-health-score",
 			MIMEType: "application/json",
 			Text:     string(data),
 		},
