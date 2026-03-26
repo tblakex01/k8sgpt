@@ -173,6 +173,10 @@ func (e *Engine) executeInteractive(rem *common.Remediation) (outcome, errStr st
 	if len(rem.CommandArgs) == 0 {
 		return OutcomeLogged, "no command args provided"
 	}
+	// Only allow kubectl commands — same guard as executeAuto and RunRemediation
+	if rem.CommandArgs[0] != "kubectl" {
+		return OutcomeLogged, fmt.Sprintf("interactive execution blocked: disallowed binary %q (only kubectl allowed)", rem.CommandArgs[0])
+	}
 
 	cmdStr := strings.Join(rem.CommandArgs, " ")
 	fmt.Printf("Policy remediation — run command? %s [y/N]: ", cmdStr)
