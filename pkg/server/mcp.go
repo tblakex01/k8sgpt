@@ -26,6 +26,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/analysis"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
+	"github.com/k8sgpt-ai/k8sgpt/pkg/policy"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/server/config"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/store"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -369,6 +370,32 @@ func (s *K8sGptMCPServer) registerToolsAndResources() error {
 		),
 	)
 	s.server.AddTool(historyTool, s.handleAnalysisHistory)
+
+	policiesListTool := mcp.NewTool("remediation-policies",
+		mcp.WithDescription("List configured remediation policies or test them against current cluster state"),
+		mcp.WithString("action",
+			mcp.Required(),
+			mcp.Description("Action: list or test"),
+		),
+		mcp.WithString("namespace",
+			mcp.Description("Namespace for test action"),
+		),
+	)
+	s.server.AddTool(policiesListTool, s.handleRemediationPolicies)
+
+	policyAuditTool := mcp.NewTool("policy-audit",
+		mcp.WithDescription("Query the policy audit log"),
+		mcp.WithString("policyName",
+			mcp.Description("Filter by policy name"),
+		),
+		mcp.WithString("since",
+			mcp.Description("Duration filter (e.g. 168h)"),
+		),
+		mcp.WithNumber("limit",
+			mcp.Description("Max entries (default 50)"),
+		),
+	)
+	s.server.AddTool(policyAuditTool, s.handlePolicyAudit)
 
 	return nil
 }
@@ -867,6 +894,88 @@ func (s *K8sGptMCPServer) handleAnalysisHistory(ctx context.Context, request mcp
 	default:
 		return mcp.NewToolResultErrorf("Unknown action %q. Use: list, diff, trend", action), nil
 	}
+}
+
+// handleRemediationPolicies handles the remediation-policies tool
+func (s *K8sGptMCPServer) handleRemediationPolicies(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+	action, _ := args["action"].(string)
+
+	switch action {
+	case "list":
+		policies := policy.LoadPolicies()
+		data, err := json.MarshalIndent(policies, "", "  ")
+		if err != nil {
+			return mcp.NewToolResultErrorf("Failed to marshal policies: %v", err), nil
+		}
+		return mcp.NewToolResultText(string(data)), nil
+
+	case "test":
+		namespace, _ := args["namespace"].(string)
+		a, err := analysis.NewAnalysis("", "", nil, namespace, "", true, false, 10, false, false, nil, false)
+		if err != nil {
+			return mcp.NewToolResultErrorf("Failed to create analysis: %v", err), nil
+		}
+		defer a.Close()
+		a.RunAnalysis()
+
+		policies := policy.LoadPolicies()
+		engine := &policy.Engine{
+			Policies:   policies,
+			PolicyMode: "dry-run",
+		}
+		evalResults := engine.Evaluate(a.Results, namespace)
+		data, err := json.MarshalIndent(evalResults, "", "  ")
+		if err != nil {
+			return mcp.NewToolResultErrorf("Failed to marshal eval results: %v", err), nil
+		}
+		return mcp.NewToolResultText(string(data)), nil
+
+	default:
+		return mcp.NewToolResultErrorf("Unknown action %q. Use: list, test", action), nil
+	}
+}
+
+// handlePolicyAudit handles the policy-audit tool
+func (s *K8sGptMCPServer) handlePolicyAudit(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+
+	storePath := viper.GetString("store.path")
+	if storePath == "" {
+		homeDir, _ := os.UserHomeDir()
+		storePath = filepath.Join(homeDir, ".k8sgpt", "history.db")
+	}
+
+	resultStore, err := store.NewSQLiteStore(storePath)
+	if err != nil {
+		return mcp.NewToolResultErrorf("Failed to open store: %v", err), nil
+	}
+	defer resultStore.Close()
+
+	opts := policy.AuditOpts{Limit: 50}
+
+	if policyName, ok := args["policyName"].(string); ok && policyName != "" {
+		opts.PolicyName = policyName
+	}
+	if sinceStr, ok := args["since"].(string); ok && sinceStr != "" {
+		if d, err := time.ParseDuration(sinceStr); err == nil {
+			opts.Since = time.Now().Add(-d)
+		}
+	}
+	if limitVal, ok := args["limit"].(float64); ok && limitVal > 0 {
+		opts.Limit = int(limitVal)
+	}
+
+	entries, err := policy.QueryAuditLog(resultStore.DB(), opts)
+	if err != nil {
+		return mcp.NewToolResultErrorf("Failed to query audit log: %v", err), nil
+	}
+
+	data, err := json.MarshalIndent(entries, "", "  ")
+	if err != nil {
+		return mcp.NewToolResultErrorf("Failed to marshal audit entries: %v", err), nil
+	}
+	return mcp.NewToolResultText(string(data)), nil
 }
 
 // Close closes the MCP server and releases resources
