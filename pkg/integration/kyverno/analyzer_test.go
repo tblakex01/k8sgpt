@@ -88,9 +88,9 @@ func TestAnalyzerNamespaceFiltering(t *testing.T) {
 	}
 
 	// Verify results
-	assert.Equal(t, len(results), 1)
-	assert.Equal(t, results[0].Kind, "PolicyReport")
-	assert.Equal(t, results[0].Name, "test-ns/policy-1")
+	assert.Len(t, results, 1)
+	assert.Equal(t, "PolicyReport", results[0].Kind)
+	assert.Equal(t, "test-ns/policy-1", results[0].Name)
 }
 
 func TestAnalyzerAllNamespace(t *testing.T) {
@@ -112,6 +112,6 @@ func TestAnalyzerAllNamespace(t *testing.T) {
 	}
 
 	// Verify results
-	assert.Equal(t, len(results), 2)
+	assert.Len(t, results, 2)
 
 }

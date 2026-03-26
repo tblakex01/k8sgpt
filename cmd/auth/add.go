@@ -116,7 +116,7 @@ var addCmd = &cobra.Command{
 
 		if ai.NeedPassword(backend) && password == "" {
 			fmt.Printf("Enter %s Key: ", backend)
-			bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+			bytePassword, err := term.ReadPassword(syscall.Stdin)
 			if err != nil {
 				color.Red("Error reading %s Key from stdin: %s", backend,
 					err.Error())

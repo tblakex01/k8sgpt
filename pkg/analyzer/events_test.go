@@ -23,7 +23,7 @@ func FetchLatestEvent(ctx context.Context, client kubernetes.Interface, namespac
 	for _, event := range events.Items {
 		// Check if the event name matches the requested name (partial match)
 		if eventName == "" || event.Name == eventName {
-			if latestEvent == nil || event.LastTimestamp.Time.After(latestEvent.LastTimestamp.Time) {
+			if latestEvent == nil || event.LastTimestamp.After(latestEvent.LastTimestamp.Time) {
 				latestEvent = &event
 			}
 		}

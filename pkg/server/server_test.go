@@ -11,6 +11,7 @@ import (
 
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
@@ -39,10 +40,10 @@ func TestServe(t *testing.T) {
 
 	// Wait until the server is ready to accept connections
 	err := waitForPort("localhost:50059", 10*time.Second)
-	assert.NoError(t, err, "Server should start without error")
+	require.NoError(t, err, "Server should start without error")
 
 	conn, err := grpc.Dial("localhost:50059", grpc.WithInsecure())
-	assert.NoError(t, err, "Should be able to dial the server")
+	require.NoError(t, err, "Should be able to dial the server")
 	defer func() {
 		if err := conn.Close(); err != nil {
 			t.Logf("failed to close connection: %v", err)
@@ -54,12 +55,12 @@ func TestServe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	resp, err := cli.ServerReflectionInfo(ctx)
-	assert.NoError(t, err, "Should be able to get server reflection info")
+	require.NoError(t, err, "Should be able to get server reflection info")
 	assert.NotNil(t, resp, "Response should not be nil")
 
 	// Cleanup
 	err = s.Shutdown()
-	assert.NoError(t, err, "Shutdown should not return an error")
+	require.NoError(t, err, "Shutdown should not return an error")
 }
 
 // TestMCPServerCreation tests the creation of an MCP server
@@ -80,14 +81,14 @@ func TestMCPServerCreation(t *testing.T) {
 
 	// Test HTTP mode
 	mcpServer, err := NewMCPServer("8088", aiProvider, true, logger)
-	assert.NoError(t, err, "Should be able to create MCP server with HTTP transport")
+	require.NoError(t, err, "Should be able to create MCP server with HTTP transport")
 	assert.NotNil(t, mcpServer, "MCP server should not be nil")
 	assert.True(t, mcpServer.useHTTP, "MCP server should be in HTTP mode")
 	assert.Equal(t, "8088", mcpServer.port, "Port should be set correctly")
 
 	// Test stdio mode
 	mcpServerStdio, err := NewMCPServer("8088", aiProvider, false, logger)
-	assert.NoError(t, err, "Should be able to create MCP server with stdio transport")
+	require.NoError(t, err, "Should be able to create MCP server with stdio transport")
 	assert.NotNil(t, mcpServerStdio, "MCP server should not be nil")
 	assert.False(t, mcpServerStdio.useHTTP, "MCP server should be in stdio mode")
 }
@@ -109,7 +110,7 @@ func TestMCPServerBasicHTTP(t *testing.T) {
 	}
 
 	mcpServer, err := NewMCPServer("8091", aiProvider, true, logger)
-	assert.NoError(t, err, "Should be able to create MCP server")
+	require.NoError(t, err, "Should be able to create MCP server")
 
 	// For HTTP mode, the server is already started in NewMCPServer
 	// No need to call Start() as it's already running in a goroutine
@@ -211,7 +212,7 @@ func TestMCPServerBasicHTTP(t *testing.T) {
 
 	// Cleanup
 	err = mcpServer.Close()
-	assert.NoError(t, err, "MCP server should close without error")
+	require.NoError(t, err, "MCP server should close without error")
 }
 
 // TestMCPServerToolCall tests calling a specific tool (analyze) through the MCP server
@@ -231,7 +232,7 @@ func TestMCPServerToolCall(t *testing.T) {
 	}
 
 	mcpServer, err := NewMCPServer("8090", aiProvider, true, logger)
-	assert.NoError(t, err, "Should be able to create MCP server")
+	require.NoError(t, err, "Should be able to create MCP server")
 
 	// For HTTP mode, the server is already started in NewMCPServer
 	// No need to call Start() as it's already running in a goroutine
@@ -325,7 +326,7 @@ func TestMCPServerToolCall(t *testing.T) {
 
 	// Cleanup
 	err = mcpServer.Close()
-	assert.NoError(t, err, "MCP server should close without error")
+	require.NoError(t, err, "MCP server should close without error")
 }
 
 func waitForPort(address string, timeout time.Duration) error {

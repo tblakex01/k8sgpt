@@ -51,23 +51,23 @@ func ParseCacheConfiguration() (CacheProvider, error) {
 func NewCacheProvider(cacheType, bucketname, region, endpoint, storageAccount, containerName, projectId string, insecure bool) (CacheProvider, error) {
 	cProvider := CacheProvider{}
 
-	switch {
-	case cacheType == "azure":
+	switch cacheType {
+	case "azure":
 		cProvider.Azure.ContainerName = containerName
 		cProvider.Azure.StorageAccount = storageAccount
 		cProvider.CurrentCacheType = "azure"
-	case cacheType == "gcs":
+	case "gcs":
 		cProvider.GCS.BucketName = bucketname
 		cProvider.GCS.ProjectId = projectId
 		cProvider.GCS.Region = region
 		cProvider.CurrentCacheType = "gcs"
-	case cacheType == "s3":
+	case "s3":
 		cProvider.S3.BucketName = bucketname
 		cProvider.S3.Region = region
 		cProvider.S3.Endpoint = endpoint
 		cProvider.S3.InsecureSkipVerify = insecure
 		cProvider.CurrentCacheType = "s3"
-	case cacheType == "interplex":
+	case "interplex":
 		cProvider.Interplex.ConnectionString = endpoint
 		cProvider.CurrentCacheType = "interplex"
 	default:
@@ -90,14 +90,14 @@ func GetCacheConfiguration() (ICache, error) {
 	}
 
 	var cache ICache
-	switch {
-	case cacheInfo.CurrentCacheType == "gcs":
+	switch cacheInfo.CurrentCacheType {
+	case "gcs":
 		cache = &GCSCache{}
-	case cacheInfo.CurrentCacheType == "azure":
+	case "azure":
 		cache = &AzureCache{}
-	case cacheInfo.CurrentCacheType == "s3":
+	case "s3":
 		cache = &S3Cache{}
-	case cacheInfo.CurrentCacheType == "interplex":
+	case "interplex":
 		cache = &InterplexCache{}
 	default:
 		cache = &FileBasedCache{}

@@ -337,7 +337,7 @@ func TestServiceAnalyzerLabelSelectorFiltering(t *testing.T) {
 	sAnalyzer := ServiceAnalyzer{}
 	results, err := sAnalyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "default/Endpoint1", results[0].Name)
 
 	config = common.Analyzer{
@@ -352,6 +352,6 @@ func TestServiceAnalyzerLabelSelectorFiltering(t *testing.T) {
 	sAnalyzer = ServiceAnalyzer{}
 	results, err = sAnalyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "default/Endpoint1", results[0].Name)
 }

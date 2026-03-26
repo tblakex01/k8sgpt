@@ -53,7 +53,7 @@ func TestDaemonSetAnalyzerHealthy(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(results))
+	require.Empty(t, results)
 }
 
 func TestDaemonSetAnalyzerSchedulingGap(t *testing.T) {
@@ -83,7 +83,7 @@ func TestDaemonSetAnalyzerSchedulingGap(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	var found bool
 	for _, f := range results[0].Error {
@@ -121,7 +121,7 @@ func TestDaemonSetAnalyzerUnavailable(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	var found bool
 	for _, f := range results[0].Error {
@@ -159,7 +159,7 @@ func TestDaemonSetAnalyzerMisscheduled(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	var found bool
 	for _, f := range results[0].Error {
@@ -197,7 +197,7 @@ func TestDaemonSetAnalyzerMultipleIssues(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.GreaterOrEqual(t, len(results[0].Error), 3)
 }
 
@@ -241,7 +241,7 @@ func TestDaemonSetAnalyzerWarningEvent(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	var found bool
 	for _, f := range results[0].Error {
@@ -287,7 +287,7 @@ func TestDaemonSetAnalyzerNamespaceFiltering(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 }
 
 func TestDaemonSetAnalyzerLabelSelectorFiltering(t *testing.T) {
@@ -329,5 +329,5 @@ func TestDaemonSetAnalyzerLabelSelectorFiltering(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 }

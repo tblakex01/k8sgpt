@@ -9,6 +9,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 // MockAI is a mock implementation of the ai.IAI interface for testing
@@ -107,10 +108,10 @@ func TestQuery_Success(t *testing.T) {
 	})
 
 	// Assertions
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, testResponse, response.Response)
-	assert.Equal(t, "", response.Error.Message)
+	assert.Empty(t, response.Error.Message)
 
 	// Verify mocks
 	mockAI.AssertExpectations(t)
@@ -144,9 +145,9 @@ func TestQuery_UnmarshalError(t *testing.T) {
 	})
 
 	// Assertions
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, response)
-	assert.Equal(t, "", response.Response)
+	assert.Empty(t, response.Response)
 	assert.Contains(t, response.Error.Message, "Failed to unmarshal AI configuration")
 
 	// Verify mocks
@@ -193,9 +194,9 @@ func TestQuery_ProviderNotFound(t *testing.T) {
 	})
 
 	// Assertions
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, response)
-	assert.Equal(t, "", response.Response)
+	assert.Empty(t, response.Response)
 	assert.Contains(t, response.Error.Message, "AI provider test-backend not found in configuration")
 
 	// Verify mocks
@@ -245,9 +246,9 @@ func TestQuery_ConfigureError(t *testing.T) {
 	})
 
 	// Assertions
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, response)
-	assert.Equal(t, "", response.Response)
+	assert.Empty(t, response.Response)
 	assert.Contains(t, response.Error.Message, "Failed to configure AI client")
 
 	// Verify mocks
@@ -298,9 +299,9 @@ func TestQuery_GetCompletionError(t *testing.T) {
 	})
 
 	// Assertions
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, response)
-	assert.Equal(t, "", response.Response)
+	assert.Empty(t, response.Response)
 	assert.Equal(t, "completion error", response.Error.Message)
 
 	// Verify mocks

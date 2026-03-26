@@ -210,6 +210,6 @@ func TestJobAnalyzerLabelSelector(t *testing.T) {
 	analyzer := JobAnalyzer{}
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "default/job-with-label", results[0].Name)
 }

@@ -91,7 +91,7 @@ func (c *SageMakerAIClient) GetCompletion(_ context.Context, prompt string) (str
 		},
 
 		Parameters: Parameters{
-			MaxNewTokens: int(c.maxTokens),
+			MaxNewTokens: c.maxTokens,
 			TopP:         float64(c.topP),
 			TopK:         float64(c.topK),
 			Temperature:  float64(c.temperature),

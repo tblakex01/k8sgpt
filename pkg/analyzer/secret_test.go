@@ -88,7 +88,7 @@ func TestSecretAnalyzerHealthy(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(results))
+	require.Empty(t, results)
 }
 
 func TestSecretAnalyzerDanglingVolumeRef(t *testing.T) {
@@ -130,7 +130,7 @@ func TestSecretAnalyzerDanglingVolumeRef(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	found := false
 	for _, f := range results[0].Error {
@@ -179,7 +179,7 @@ func TestSecretAnalyzerDanglingEnvFromRef(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 }
 
 func TestSecretAnalyzerDanglingSecretKeyRef(t *testing.T) {
@@ -224,7 +224,7 @@ func TestSecretAnalyzerDanglingSecretKeyRef(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 }
 
 func TestSecretAnalyzerDanglingImagePullSecret(t *testing.T) {
@@ -259,7 +259,7 @@ func TestSecretAnalyzerDanglingImagePullSecret(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 }
 
 func TestSecretAnalyzerDanglingInitContainerRef(t *testing.T) {
@@ -306,7 +306,7 @@ func TestSecretAnalyzerDanglingInitContainerRef(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 }
 
 func TestSecretAnalyzerExistingSecretNoFalsePositive(t *testing.T) {
@@ -366,7 +366,7 @@ func TestSecretAnalyzerExistingSecretNoFalsePositive(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(results))
+	require.Empty(t, results)
 }
 
 func TestSecretAnalyzerTLSMissingKey(t *testing.T) {
@@ -394,7 +394,7 @@ func TestSecretAnalyzerTLSMissingKey(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	found := false
 	for _, f := range results[0].Error {
@@ -431,7 +431,7 @@ func TestSecretAnalyzerTLSEmptyCert(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	found := false
 	for _, f := range results[0].Error {
@@ -468,7 +468,7 @@ func TestSecretAnalyzerTLSMissingKeyOnly(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	found := false
 	for _, f := range results[0].Error {
@@ -519,7 +519,7 @@ func TestSecretAnalyzerTLSExpiringCert(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	foundExpiring := false
 	foundIngress := false
@@ -562,7 +562,7 @@ func TestSecretAnalyzerTLSValidCert(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(results))
+	require.Empty(t, results)
 }
 
 func TestSecretAnalyzerMalformedPEM(t *testing.T) {
@@ -591,7 +591,7 @@ func TestSecretAnalyzerMalformedPEM(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	found := false
 	for _, f := range results[0].Error {
@@ -628,7 +628,7 @@ func TestSecretAnalyzerOversized(t *testing.T) {
 
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	found := false
 	for _, f := range results[0].Error {

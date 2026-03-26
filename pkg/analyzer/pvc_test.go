@@ -213,13 +213,13 @@ func TestPersistentVolumeClaimAnalyzer(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.expectations == nil {
-				require.Equal(t, 0, len(results))
+				require.Empty(t, results)
 			} else {
 				sort.Slice(results, func(i, j int) bool {
 					return results[i].Name < results[j].Name
 				})
 
-				require.Equal(t, len(tt.expectations), len(results))
+				require.Len(t, results, len(tt.expectations))
 
 				for i, expectation := range tt.expectations {
 					require.Equal(t, expectation, results[i].Name)
@@ -275,6 +275,6 @@ func TestPvcAnalyzerLabelSelectorFiltering(t *testing.T) {
 	pvcAnalyzer := PvcAnalyzer{}
 	results, err := pvcAnalyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "default/PVC1", results[0].Name)
 }

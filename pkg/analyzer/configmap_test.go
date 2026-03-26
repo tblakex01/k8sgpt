@@ -20,6 +20,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -127,12 +128,12 @@ func TestConfigMapAnalyzer(t *testing.T) {
 			// Create test resources
 			for _, cm := range tt.configMaps {
 				_, err := client.CoreV1().ConfigMaps(tt.namespace).Create(context.TODO(), &cm, metav1.CreateOptions{})
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			for _, pod := range tt.pods {
 				_, err := client.CoreV1().Pods(tt.namespace).Create(context.TODO(), &pod, metav1.CreateOptions{})
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			analyzer := ConfigMapAnalyzer{}
@@ -142,8 +143,8 @@ func TestConfigMapAnalyzer(t *testing.T) {
 				Namespace: tt.namespace,
 			})
 
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedErrors, len(results))
+			require.NoError(t, err)
+			assert.Len(t, results, tt.expectedErrors)
 		})
 	}
 }

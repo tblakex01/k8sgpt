@@ -136,7 +136,7 @@ func TestMutatingWebhookAnalyzer(t *testing.T) {
 
 	// The results should contain: webhook1, webhook2, and webhook4
 	resultsLen := 3
-	require.Equal(t, resultsLen, len(results))
+	require.Len(t, results, resultsLen)
 }
 
 func TestMutatingWebhookAnalyzerLabelSelectorFiltering(t *testing.T) {
@@ -210,6 +210,6 @@ func TestMutatingWebhookAnalyzerLabelSelectorFiltering(t *testing.T) {
 	mwAnalyzer := MutatingWebhookAnalyzer{}
 	results, err := mwAnalyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "default/webhook1", results[0].Name)
 }

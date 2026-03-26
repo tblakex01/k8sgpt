@@ -175,5 +175,5 @@ func TestClusterExtensionAnalyzer(t *testing.T) {
 		}
 	}
 	require.NoError(t, err)
-	require.Equal(t, 2, len(results))
+	require.Len(t, results, 2)
 }

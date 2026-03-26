@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Mock configuration
@@ -97,7 +98,7 @@ func TestOpenAIClient_CustomHeaders(t *testing.T) {
 
 	client := &OpenAIClient{}
 	err := client.Configure(config)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Make a completion request to trigger the headers
 	ctx := context.Background()

@@ -160,11 +160,11 @@ func TestNodeAnalyzer(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, len(expectations), len(results))
+	require.Len(t, results, len(expectations))
 
 	for i, result := range results {
 		require.Equal(t, expectations[i].name, result.Name)
-		require.Equal(t, expectations[i].failuresCount, len(result.Error))
+		require.Len(t, result.Error, expectations[i].failuresCount)
 	}
 }
 
@@ -212,6 +212,6 @@ func TestNodeAnalyzerLabelSelectorFiltering(t *testing.T) {
 	nAnalyzer := NodeAnalyzer{}
 	results, err := nAnalyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "Node1", results[0].Name)
 }

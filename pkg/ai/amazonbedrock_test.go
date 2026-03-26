@@ -5,6 +5,7 @@ import (
 
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai/bedrock_support"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test models for unit testing
@@ -49,7 +50,7 @@ func TestBedrockModelConfig(t *testing.T) {
 
 	// Should return error for ARN input (no exact match)
 	_, err := client.getModelFromString("arn:aws:bedrock:us-east-1:*:inference-policy/anthropic.claude-3-5-sonnet-20240620-v1:0")
-	assert.NotNil(t, err, "Should return error for ARN input")
+	assert.Error(t, err, "Should return error for ARN input")
 }
 
 func TestBedrockInvalidModel(t *testing.T) {
@@ -57,7 +58,7 @@ func TestBedrockInvalidModel(t *testing.T) {
 
 	// Should return error for invalid model name
 	_, err := client.getModelFromString("arn:aws:s3:us-east-1:*:inference-policy/anthropic.claude-3-5-sonnet-20240620-v1:0")
-	assert.NotNil(t, err, "Should return error for invalid model name")
+	assert.Error(t, err, "Should return error for invalid model name")
 }
 
 func TestBedrockInferenceProfileARN(t *testing.T) {
@@ -74,7 +75,7 @@ func TestBedrockInferenceProfileARN(t *testing.T) {
 	// This will fail in a real environment without mocks, but we're just testing the validation logic
 	err := client.Configure(&config)
 	// We expect an error since we can't actually call AWS in tests
-	assert.NotNil(t, err, "Error should not be nil without AWS mocks")
+	require.Error(t, err, "Error should not be nil without AWS mocks")
 
 	// Test with a valid application inference profile ARN
 	appInferenceProfileARN := "arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/my-profile"
@@ -86,7 +87,7 @@ func TestBedrockInferenceProfileARN(t *testing.T) {
 	// This will fail in a real environment without mocks, but we're just testing the validation logic
 	err = client.Configure(&config)
 	// We expect an error since we can't actually call AWS in tests
-	assert.NotNil(t, err, "Error should not be nil without AWS mocks")
+	require.Error(t, err, "Error should not be nil without AWS mocks")
 
 	// Test with an invalid inference profile ARN format
 	invalidARN := "arn:aws:bedrock:us-east-1:123456789012:invalid-resource/my-profile"
@@ -96,7 +97,7 @@ func TestBedrockInferenceProfileARN(t *testing.T) {
 	}
 
 	err = client.Configure(&config)
-	assert.NotNil(t, err, "Error should not be nil for invalid inference profile ARN format")
+	assert.Error(t, err, "Error should not be nil for invalid inference profile ARN format")
 }
 
 func TestBedrockGetCompletionInferenceProfile(t *testing.T) {
@@ -120,7 +121,7 @@ func TestBedrockGetCompletionInferenceProfile(t *testing.T) {
 		Model: modelName,
 	}
 	err := client.Configure(&config)
-	assert.Nil(t, err, "Error should be nil")
+	require.NoError(t, err, "Error should be nil")
 	assert.Equal(t, modelName, client.model.Config.ModelName, "Model name should match")
 }
 
@@ -200,13 +201,13 @@ func TestDefaultModels(t *testing.T) {
 		Model: "anthropic.claude-v2",
 	})
 
-	assert.NoError(t, err, "Configure should not return an error")
+	require.NoError(t, err, "Configure should not return an error")
 	assert.NotNil(t, client.models, "Models should be initialized")
 	assert.NotEmpty(t, client.models, "Models should not be empty")
 
 	// Test finding a default model
 	model, err := client.getModelFromString("anthropic.claude-v2")
-	assert.NoError(t, err, "Should find the model")
+	require.NoError(t, err, "Should find the model")
 	assert.Equal(t, "anthropic.claude-v2", model.Name, "Should find the correct model")
 }
 

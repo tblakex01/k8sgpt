@@ -11,6 +11,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai/bedrock_support"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 // Mock for Bedrock Management Client
@@ -20,11 +21,11 @@ type MockBedrockClient struct {
 
 func (m *MockBedrockClient) GetInferenceProfile(ctx context.Context, params *bedrock.GetInferenceProfileInput, optFns ...func(*bedrock.Options)) (*bedrock.GetInferenceProfileOutput, error) {
 	args := m.Called(ctx, params)
-	
+
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	
+
 	return args.Get(0).(*bedrock.GetInferenceProfileOutput), args.Error(1)
 }
 
@@ -35,11 +36,11 @@ type MockBedrockRuntimeClient struct {
 
 func (m *MockBedrockRuntimeClient) InvokeModel(ctx context.Context, params *bedrockruntime.InvokeModelInput, optFns ...func(*bedrockruntime.Options)) (*bedrockruntime.InvokeModelOutput, error) {
 	args := m.Called(ctx, params)
-	
+
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	
+
 	return args.Get(0).(*bedrockruntime.InvokeModelOutput), args.Error(1)
 }
 
@@ -59,21 +60,21 @@ func TestBedrockInferenceProfileARNWithMocks(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Create a client with test models
 	client := &AmazonBedRockClient{models: testModels}
-	
+
 	// Create mock clients
 	mockMgmtClient := new(MockBedrockClient)
 	mockRuntimeClient := new(MockBedrockRuntimeClient)
-	
+
 	// Inject mock clients into the AmazonBedRockClient
 	client.mgmtClient = mockMgmtClient
 	client.client = mockRuntimeClient
-	
+
 	// Test with a valid inference profile ARN
 	inferenceProfileARN := "arn:aws:bedrock:us-east-1:123456789012:inference-profile/my-profile"
-	
+
 	// Setup mock response for GetInferenceProfile
 	mockMgmtClient.On("GetInferenceProfile", mock.Anything, &bedrock.GetInferenceProfileInput{
 		InferenceProfileIdentifier: aws.String("my-profile"),
@@ -84,20 +85,20 @@ func TestBedrockInferenceProfileARNWithMocks(t *testing.T) {
 			},
 		},
 	}, nil)
-	
+
 	// Configure the client with the inference profile ARN
 	config := AIProvider{
 		Model:          inferenceProfileARN,
 		ProviderRegion: "us-east-1",
 	}
-	
+
 	// Test the Configure method with the inference profile ARN
 	err := client.Configure(&config)
-	
+
 	// Verify that the configuration was successful
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, inferenceProfileARN, client.model.Config.ModelName)
-	
+
 	// Verify that the mock was called
 	mockMgmtClient.AssertExpectations(t)
 }

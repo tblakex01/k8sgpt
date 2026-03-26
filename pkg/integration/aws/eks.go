@@ -18,7 +18,7 @@ type EKSAnalyzer struct {
 }
 
 func (e *EKSAnalyzer) Analyze(analysis common.Analyzer) ([]common.Result, error) {
-	var cr []common.Result = []common.Result{}
+	var cr = []common.Result{}
 	_ = map[string]common.PreAnalysis{}
 	svc := eks.New(e.session)
 	// Get the name of the current cluster

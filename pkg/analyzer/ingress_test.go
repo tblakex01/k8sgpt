@@ -169,7 +169,7 @@ func TestIngressAnalyzer(t *testing.T) {
 
 			// Create the ingress in the fake clientset
 			_, err := clientset.NetworkingV1().Ingresses(tc.ingress.Namespace).Create(ctx, tc.ingress, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// Create the analyzer configuration
 			config := common.Analyzer{
@@ -183,7 +183,7 @@ func TestIngressAnalyzer(t *testing.T) {
 			// Create the analyzer and run analysis
 			analyzer := IngressAnalyzer{}
 			results, err := analyzer.Analyze(config)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// Check that we got the expected number of issues
 			assert.Len(t, results, 1, "Expected 1 result")
@@ -243,7 +243,7 @@ func TestIngressAnalyzerLabelSelector(t *testing.T) {
 	analyzer := IngressAnalyzer{}
 	results, err := analyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "default/ingress-with-label", results[0].Name)
 }
 

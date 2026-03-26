@@ -81,7 +81,7 @@ var DumpCmd = &cobra.Command{
 		if err != nil {
 			color.Yellow("Could not find kubernetes server version")
 		}
-		var dumpOut DumpOut = DumpOut{
+		var dumpOut = DumpOut{
 			AIConfiguration:        configAI,
 			ActiveFilters:          activeFilters,
 			KubenetesServerVersion: v,

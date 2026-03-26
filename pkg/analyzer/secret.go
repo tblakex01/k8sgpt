@@ -340,7 +340,7 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 	if !certExists || len(certData) == 0 {
 		doc := apiDoc.GetApiDocV2("data")
 		failures = append(failures, common.Failure{
-			Text: fmt.Sprintf("TLS Secret %s/%s is missing the tls.crt data key.", secret.Namespace, secret.Name),
+			Text:          fmt.Sprintf("TLS Secret %s/%s is missing the tls.crt data key.", secret.Namespace, secret.Name),
 			KubernetesDoc: doc,
 			Sensitive: []common.Sensitive{
 				{
@@ -371,7 +371,7 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 	if !keyExists || len(keyData) == 0 {
 		doc := apiDoc.GetApiDocV2("data")
 		failures = append(failures, common.Failure{
-			Text: fmt.Sprintf("TLS Secret %s/%s is missing the tls.key data key.", secret.Namespace, secret.Name),
+			Text:          fmt.Sprintf("TLS Secret %s/%s is missing the tls.key data key.", secret.Namespace, secret.Name),
 			KubernetesDoc: doc,
 			Sensitive: []common.Sensitive{
 				{
@@ -402,7 +402,7 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 	if block == nil {
 		doc := apiDoc.GetApiDocV2("data")
 		failures = append(failures, common.Failure{
-			Text: fmt.Sprintf("TLS Secret %s/%s has invalid PEM data in tls.crt", secret.Namespace, secret.Name),
+			Text:          fmt.Sprintf("TLS Secret %s/%s has invalid PEM data in tls.crt", secret.Namespace, secret.Name),
 			KubernetesDoc: doc,
 			Sensitive: []common.Sensitive{
 				{
@@ -432,7 +432,7 @@ func checkTLSSecret(a common.Analyzer, secret corev1.Secret, apiDoc kubernetes.K
 	if err != nil {
 		doc := apiDoc.GetApiDocV2("data")
 		failures = append(failures, common.Failure{
-			Text: fmt.Sprintf("TLS Secret %s/%s has unparseable certificate: %v", secret.Namespace, secret.Name, err),
+			Text:          fmt.Sprintf("TLS Secret %s/%s has unparseable certificate: %v", secret.Namespace, secret.Name, err),
 			KubernetesDoc: doc,
 			Sensitive: []common.Sensitive{
 				{

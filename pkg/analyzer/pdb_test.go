@@ -112,7 +112,7 @@ func TestPodDisruptionBudgetAnalyzer(t *testing.T) {
 	pdbAnalyzer := PdbAnalyzer{}
 	results, err := pdbAnalyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "test/PDB3", results[0].Name)
 }
 
@@ -203,6 +203,6 @@ func TestPodDisruptionBudgetAnalyzerLabelSelectorFiltering(t *testing.T) {
 	pdbAnalyzer := PdbAnalyzer{}
 	results, err := pdbAnalyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "default/PDB1", results[0].Name)
 }

@@ -168,6 +168,6 @@ func TestLogAnalyzerLabelSelectorFiltering(t *testing.T) {
 	logAnalyzer := LogAnalyzer{}
 	results, err := logAnalyzer.Analyze(config)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 	require.Equal(t, "default/Pod1/test-container1", results[0].Name)
 }

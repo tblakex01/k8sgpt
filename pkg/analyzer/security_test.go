@@ -20,6 +20,7 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/common"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,22 +128,22 @@ func TestSecurityAnalyzer(t *testing.T) {
 			// Create test resources
 			for _, sa := range tt.serviceAccounts {
 				_, err := client.CoreV1().ServiceAccounts(tt.namespace).Create(context.TODO(), &sa, metav1.CreateOptions{})
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			for _, pod := range tt.pods {
 				_, err := client.CoreV1().Pods(tt.namespace).Create(context.TODO(), &pod, metav1.CreateOptions{})
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			for _, role := range tt.roles {
 				_, err := client.RbacV1().Roles(tt.namespace).Create(context.TODO(), &role, metav1.CreateOptions{})
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			for _, rb := range tt.roleBindings {
 				_, err := client.RbacV1().RoleBindings(tt.namespace).Create(context.TODO(), &rb, metav1.CreateOptions{})
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			analyzer := SecurityAnalyzer{}
@@ -152,7 +153,7 @@ func TestSecurityAnalyzer(t *testing.T) {
 				Namespace: tt.namespace,
 			})
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// Debug: Print all results
 			t.Logf("Got %d results:", len(results))
@@ -175,7 +176,7 @@ func TestSecurityAnalyzer(t *testing.T) {
 			}
 
 			// Check total number of results matches expected kinds
-			assert.Equal(t, len(tt.expectedKinds), len(results), "Expected %d total results", len(tt.expectedKinds))
+			assert.Len(t, results, len(tt.expectedKinds), "Expected %d total results", len(tt.expectedKinds))
 		})
 	}
 }

@@ -136,7 +136,7 @@ func TestValidatingWebhookAnalyzer(t *testing.T) {
 
 	// The results should contain: webhook1, webhook2, and webhook4
 	resultsLen := 3
-	require.Equal(t, resultsLen, len(results))
+	require.Len(t, results, resultsLen)
 }
 
 func TestValidatingWebhookAnalyzerLabelSelectorFiltering(t *testing.T) {
@@ -197,7 +197,7 @@ func TestValidatingWebhookAnalyzerLabelSelectorFiltering(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 
 	config = common.Analyzer{
 		Client: &kubernetes.Client{
@@ -213,5 +213,5 @@ func TestValidatingWebhookAnalyzerLabelSelectorFiltering(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	require.Equal(t, 1, len(results))
+	require.Len(t, results, 1)
 }

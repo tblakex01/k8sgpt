@@ -16,8 +16,8 @@ func TestBedrockModelConfig(t *testing.T) {
 	}
 
 	assert.Equal(t, 100, config.MaxTokens)
-	assert.Equal(t, float32(0.7), config.Temperature)
-	assert.Equal(t, float32(0.9), config.TopP)
+	assert.InEpsilon(t, float32(0.7), config.Temperature, 1e-9)
+	assert.InEpsilon(t, float32(0.9), config.TopP, 1e-9)
 	assert.Equal(t, "test-model", config.ModelName)
 }
 

@@ -404,17 +404,17 @@ func TestPodAnalyzer(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.expectations == nil {
-				require.Equal(t, 0, len(results))
+				require.Empty(t, results)
 			} else {
 				sort.Slice(results, func(i, j int) bool {
 					return results[i].Name < results[j].Name
 				})
 
-				require.Equal(t, len(tt.expectations), len(results))
+				require.Len(t, results, len(tt.expectations))
 
 				for i, result := range results {
 					require.Equal(t, tt.expectations[i].name, result.Name)
-					require.Equal(t, tt.expectations[i].failuresCount, len(result.Error))
+					require.Len(t, result.Error, tt.expectations[i].failuresCount)
 				}
 			}
 		})

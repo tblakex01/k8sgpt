@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCohereCompletion_GetCompletion(t *testing.T) {
@@ -18,16 +19,16 @@ func TestCohereCompletion_GetCompletion(t *testing.T) {
 	prompt := "Test prompt"
 
 	body, err := completion.GetCompletion(context.Background(), prompt, modelConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var request map[string]interface{}
 	err = json.Unmarshal(body, &request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "\n\nHuman: Test prompt  \n\nAssistant:", request["prompt"])
 	assert.Equal(t, 100, int(request["max_tokens_to_sample"].(float64)))
-	assert.Equal(t, 0.7, request["temperature"])
-	assert.Equal(t, 0.9, request["top_p"])
+	assert.InEpsilon(t, 0.7, request["temperature"], 1e-9)
+	assert.InEpsilon(t, 0.9, request["top_p"], 1e-9)
 }
 
 func TestAI21_GetCompletion(t *testing.T) {
@@ -40,16 +41,16 @@ func TestAI21_GetCompletion(t *testing.T) {
 	prompt := "Another test prompt"
 
 	body, err := completion.GetCompletion(context.Background(), prompt, modelConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var request map[string]interface{}
 	err = json.Unmarshal(body, &request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "Another test prompt", request["prompt"])
 	assert.Equal(t, 150, int(request["maxTokens"].(float64)))
-	assert.Equal(t, 0.6, request["temperature"])
-	assert.Equal(t, 0.8, request["topP"])
+	assert.InEpsilon(t, 0.6, request["temperature"], 1e-9)
+	assert.InEpsilon(t, 0.8, request["topP"], 1e-9)
 }
 
 func TestAmazonCompletion_GetDefaultCompletion(t *testing.T) {
@@ -63,17 +64,17 @@ func TestAmazonCompletion_GetDefaultCompletion(t *testing.T) {
 	prompt := "Default test prompt"
 
 	body, err := completion.GetDefaultCompletion(context.Background(), prompt, modelConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var request map[string]interface{}
 	err = json.Unmarshal(body, &request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "\n\nUser: Default test prompt", request["inputText"])
 	textConfig := request["textGenerationConfig"].(map[string]interface{})
 	assert.Equal(t, 200, int(textConfig["maxTokenCount"].(float64)))
-	assert.Equal(t, 0.5, textConfig["temperature"])
-	assert.Equal(t, 0.7, textConfig["topP"])
+	assert.InEpsilon(t, 0.5, textConfig["temperature"], 1e-9)
+	assert.InEpsilon(t, 0.7, textConfig["topP"], 1e-9)
 }
 
 func TestAmazonCompletion_GetNovaCompletion(t *testing.T) {
@@ -87,16 +88,16 @@ func TestAmazonCompletion_GetNovaCompletion(t *testing.T) {
 	prompt := "Nova test prompt"
 
 	body, err := completion.GetNovaCompletion(context.Background(), prompt, modelConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var request map[string]interface{}
 	err = json.Unmarshal(body, &request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	inferenceConfig := request["inferenceConfig"].(map[string]interface{})
 	assert.Equal(t, 250, int(inferenceConfig["max_new_tokens"].(float64)))
-	assert.Equal(t, 0.4, inferenceConfig["temperature"])
-	assert.Equal(t, 0.6, inferenceConfig["topP"])
+	assert.InEpsilon(t, 0.4, inferenceConfig["temperature"], 1e-9)
+	assert.InEpsilon(t, 0.6, inferenceConfig["topP"], 1e-9)
 
 	messages := request["messages"].([]interface{})
 	message := messages[0].(map[string]interface{})
@@ -116,16 +117,16 @@ func TestAmazonCompletion_GetCompletion_Nova(t *testing.T) {
 	prompt := "Nova test prompt"
 
 	body, err := completion.GetCompletion(context.Background(), prompt, modelConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var request map[string]interface{}
 	err = json.Unmarshal(body, &request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	inferenceConfig := request["inferenceConfig"].(map[string]interface{})
 	assert.Equal(t, 250, int(inferenceConfig["max_new_tokens"].(float64)))
-	assert.Equal(t, 0.4, inferenceConfig["temperature"])
-	assert.Equal(t, 0.6, inferenceConfig["topP"])
+	assert.InEpsilon(t, 0.4, inferenceConfig["temperature"], 1e-9)
+	assert.InEpsilon(t, 0.6, inferenceConfig["topP"], 1e-9)
 
 	messages := request["messages"].([]interface{})
 	message := messages[0].(map[string]interface{})
@@ -145,17 +146,17 @@ func TestAmazonCompletion_GetCompletion_Default(t *testing.T) {
 	prompt := "Default test prompt"
 
 	body, err := completion.GetCompletion(context.Background(), prompt, modelConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var request map[string]interface{}
 	err = json.Unmarshal(body, &request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "\n\nUser: Default test prompt", request["inputText"])
 	textConfig := request["textGenerationConfig"].(map[string]interface{})
 	assert.Equal(t, 200, int(textConfig["maxTokenCount"].(float64)))
-	assert.Equal(t, 0.5, textConfig["temperature"])
-	assert.Equal(t, 0.7, textConfig["topP"])
+	assert.InEpsilon(t, 0.5, textConfig["temperature"], 1e-9)
+	assert.InEpsilon(t, 0.7, textConfig["topP"], 1e-9)
 }
 
 func TestAmazonCompletion_GetCompletion_Inference_Profile(t *testing.T) {
@@ -169,7 +170,7 @@ func TestAmazonCompletion_GetCompletion_Inference_Profile(t *testing.T) {
 	prompt := "Test prompt"
 
 	_, err := completion.GetCompletion(context.Background(), prompt, modelConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestIsModelSupported(t *testing.T) {

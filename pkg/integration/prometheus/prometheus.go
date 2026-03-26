@@ -34,7 +34,7 @@ func (p *Prometheus) Deploy(namespace string) error {
 	kubeconfig := viper.GetString("kubeconfig")
 	client, err := kubernetes.NewClient(kubecontext, kubeconfig)
 	if err != nil {
-		color.Red("Error initialising kubernetes client: %v", err)
+		color.Red("Error initializing kubernetes client: %v", err)
 		os.Exit(1)
 	}
 

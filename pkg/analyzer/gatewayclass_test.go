@@ -52,7 +52,7 @@ func TestGatewayClassAnalyzer(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, len(analysisResults), 1)
+	assert.Len(t, analysisResults, 1)
 
 }
 
@@ -101,5 +101,5 @@ func TestGatewayClassAnalyzerLabelSelectorFiltering(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, len(analysisResults), 1)
+	assert.Len(t, analysisResults, 1)
 }

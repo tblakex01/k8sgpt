@@ -178,5 +178,5 @@ func TestClusterCatalogAnalyzer(t *testing.T) {
 		}
 	}
 	require.NoError(t, err)
-	require.Equal(t, 3, len(results))
+	require.Len(t, results, 3)
 }

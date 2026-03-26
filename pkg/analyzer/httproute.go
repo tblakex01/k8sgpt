@@ -84,8 +84,8 @@ func (HTTPRouteAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 				// Check if the aforementioned Gateway allows the HTTPRoutes from the route's namespace
 				for _, listener := range gtw.Spec.Listeners {
 					if listener.AllowedRoutes.Namespaces != nil {
-						switch allow := listener.AllowedRoutes.Namespaces.From; {
-						case *allow == gtwapi.NamespacesFromSame:
+						switch allow := listener.AllowedRoutes.Namespaces.From; *allow {
+						case gtwapi.NamespacesFromSame:
 							// check if Gateway is in the same namespace
 							if route.Namespace != gtw.Namespace {
 								failures = append(failures, common.Failure{
@@ -115,7 +115,7 @@ func (HTTPRouteAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) {
 									},
 								})
 							}
-						case *allow == gtwapi.NamespacesFromSelector:
+						case gtwapi.NamespacesFromSelector:
 							// check if our route include the same selector Label
 							if !util.LabelsIncludeAny(listener.AllowedRoutes.Namespaces.Selector.MatchLabels, route.Labels) {
 								failures = append(failures, common.Failure{

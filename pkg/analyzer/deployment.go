@@ -61,7 +61,7 @@ func (d DeploymentAnalyzer) Analyze(a common.Analyzer) ([]common.Result, error) 
 			labelSelector = v1.FormatLabelSelector(deployment.Spec.Selector)
 		}
 		if *deployment.Spec.Replicas != deployment.Status.ReadyReplicas {
-			if  deployment.Status.Replicas > *deployment.Spec.Replicas {
+			if deployment.Status.Replicas > *deployment.Spec.Replicas {
 				doc := apiDoc.GetApiDocV2("spec.replicas")
 
 				failures = append(failures, common.Failure{

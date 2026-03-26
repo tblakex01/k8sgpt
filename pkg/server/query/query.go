@@ -57,7 +57,7 @@ func (h *Handler) Query(ctx context.Context, i *schemav1.QueryRequest) (
 	}
 
 	resp, err := aiClient.GetCompletion(ctx, i.Query)
-	var errMessage string = ""
+	var errMessage = ""
 	if err != nil {
 		errMessage = err.Error()
 	}

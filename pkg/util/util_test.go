@@ -159,9 +159,9 @@ func TestGetParent(t *testing.T) {
 			}
 			output, ok := GetParent(&kubeClient, meta)
 			if meta.OwnerReferences[0].Name != "" {
-				require.Equal(t, true, ok)
+				require.True(t, ok)
 			} else {
-				require.Equal(t, false, ok)
+				require.False(t, ok)
 			}
 			require.Equal(t, tt.expectedOutput, output)
 		})
@@ -385,7 +385,7 @@ func TestGetPodListByLabels(t *testing.T) {
 			pl, err := GetPodListByLabels(clientset, tt.namespace, tt.labels)
 			if tt.expectedErr == "" {
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedLen, len(pl.Items))
+				require.Len(t, pl.Items, tt.expectedLen)
 			} else {
 				require.ErrorContains(t, err, tt.expectedErr)
 				require.Nil(t, pl)

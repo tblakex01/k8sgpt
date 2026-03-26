@@ -163,44 +163,44 @@ var resourceRegistry = map[string]struct {
 
 // Resource type aliases for convenience
 var resourceTypeAliases = map[string]string{
-	"pods":                      "pod",
-	"deployments":               "deployment",
-	"services":                  "service",
-	"svc":                       "service",
-	"nodes":                     "node",
-	"jobs":                      "job",
-	"cronjobs":                  "cronjob",
-	"statefulsets":              "statefulset",
-	"sts":                       "statefulset",
-	"daemonsets":                "daemonset",
-	"ds":                        "daemonset",
-	"replicasets":               "replicaset",
-	"rs":                        "replicaset",
-	"configmaps":                "configmap",
-	"cm":                        "configmap",
-	"secrets":                   "secret",
-	"ingresses":                 "ingress",
-	"ing":                       "ingress",
-	"persistentvolumeclaims":    "persistentvolumeclaim",
-	"pvc":                       "persistentvolumeclaim",
-	"persistentvolumes":         "persistentvolume",
-	"pv":                        "persistentvolume",
+	"pods":                   "pod",
+	"deployments":            "deployment",
+	"services":               "service",
+	"svc":                    "service",
+	"nodes":                  "node",
+	"jobs":                   "job",
+	"cronjobs":               "cronjob",
+	"statefulsets":           "statefulset",
+	"sts":                    "statefulset",
+	"daemonsets":             "daemonset",
+	"ds":                     "daemonset",
+	"replicasets":            "replicaset",
+	"rs":                     "replicaset",
+	"configmaps":             "configmap",
+	"cm":                     "configmap",
+	"secrets":                "secret",
+	"ingresses":              "ingress",
+	"ing":                    "ingress",
+	"persistentvolumeclaims": "persistentvolumeclaim",
+	"pvc":                    "persistentvolumeclaim",
+	"persistentvolumes":      "persistentvolume",
+	"pv":                     "persistentvolume",
 }
 
 // normalizeResourceType converts resource type variants to canonical form
 func normalizeResourceType(resourceType string) (string, error) {
 	normalized := strings.ToLower(resourceType)
-	
+
 	// Check if it's an alias
 	if canonical, ok := resourceTypeAliases[normalized]; ok {
 		normalized = canonical
 	}
-	
+
 	// Check if it's a known resource type
 	if _, ok := resourceRegistry[normalized]; !ok {
 		return "", fmt.Errorf("unsupported resource type: %s", resourceType)
 	}
-	
+
 	return normalized, nil
 }
 
@@ -480,7 +480,7 @@ func (s *K8sGptMCPServer) handleAddFilters(ctx context.Context, request mcp.Call
 
 	activeFilters := viper.GetStringSlice("active_filters")
 	addedFilters := []string{}
-	
+
 	for _, filter := range req.Filters {
 		if !contains(activeFilters, filter) {
 			activeFilters = append(activeFilters, filter)
@@ -516,7 +516,7 @@ func (s *K8sGptMCPServer) handleRemoveFilters(ctx context.Context, request mcp.C
 	activeFilters := viper.GetStringSlice("active_filters")
 	newFilters := []string{}
 	removedFilters := []string{}
-	
+
 	for _, filter := range activeFilters {
 		if !contains(req.Filters, filter) {
 			newFilters = append(newFilters, filter)

@@ -180,7 +180,7 @@ func TestAnalysis_NoProblemJsonOutput(t *testing.T) {
 	fmt.Println(got)
 	fmt.Println(expected)
 
-	require.Equal(t, got, expected)
+	require.Equal(t, expected, got)
 
 }
 
@@ -234,7 +234,7 @@ func TestAnalysis_ProblemJsonOutput(t *testing.T) {
 	fmt.Println(got)
 	fmt.Println(expected)
 
-	require.Equal(t, got, expected)
+	require.Equal(t, expected, got)
 }
 
 func TestAnalysis_MultipleProblemJsonOutput(t *testing.T) {
@@ -294,7 +294,7 @@ func TestAnalysis_MultipleProblemJsonOutput(t *testing.T) {
 	fmt.Println(got)
 	fmt.Println(expected)
 
-	require.Equal(t, got, expected)
+	require.Equal(t, expected, got)
 }
 
 func TestNewAnalysis(t *testing.T) {

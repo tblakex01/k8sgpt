@@ -86,7 +86,7 @@ func (k *Keda) UnDeploy(namespace string) error {
 	client, err := kubernetes.NewClient(kubecontext, kubeconfig)
 	if err != nil {
 		// TODO: better error handling
-		color.Red("Error initialising kubernetes client: %v", err)
+		color.Red("Error initializing kubernetes client: %v", err)
 		os.Exit(1)
 	}
 
@@ -205,13 +205,13 @@ func (k *Keda) isDeployed() bool {
 	client, err := kubernetes.NewClient(kubecontext, kubeconfig)
 	if err != nil {
 		// TODO: better error handling
-		color.Red("Error initialising kubernetes client: %v", err)
+		color.Red("Error initializing kubernetes client: %v", err)
 		os.Exit(1)
 	}
 	groups, _, err := client.Client.Discovery().ServerGroupsAndResources()
 	if err != nil {
 		// TODO: better error handling
-		color.Red("Error initialising discovery client: %v", err)
+		color.Red("Error initializing discovery client: %v", err)
 		os.Exit(1)
 	}
 
